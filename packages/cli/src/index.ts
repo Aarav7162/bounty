@@ -19,8 +19,10 @@ program
 program
   .command("init")
   .description("Run the interactive configuration wizard for seller node setup")
-  .action(async () => {
-    await runInitCommand();
+  .option("-y, --yes", "Accept default configuration automatically without prompt")
+  .option("-e, --email <email>", "PayPal recipient email")
+  .action(async (options) => {
+    await runInitCommand(options);
   });
 
 program
