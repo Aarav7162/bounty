@@ -4,6 +4,7 @@ import { CapabilityRegistration, TaskAssignment } from "@bounty/protocol";
 import { loadConfig, createDefaultConfig, saveConfig } from "../config.js";
 import { BountyTUI } from "../ui/tui.js";
 import { ExecutionSandbox } from "../worker/sandbox.js";
+import { recordSellerEarnings } from "../profile.js";
 
 export interface StartCommandOptions {
   config?: string;
@@ -153,6 +154,7 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
 
             tui.setActiveStep({ spinner: true, text: "Waiting for tasks..." });
             tui.recordPaid(receipt.amountUsd, receipt.paypalReferenceId);
+            recordSellerEarnings(receipt.amountUsd);
 
             tui.addEvent(
               chalk.green("✓"),

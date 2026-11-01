@@ -158,3 +158,4 @@ The CLI automatically reads `bounty.config.json`. You can inspect or modify floo
   - Press `Alt + Shift + D` to split vertically.
   - Press `Alt + Shift + -` to split horizontally.
   - You can have `bounty server` in pane 1, `bounty` in pane 2, and `npm run demo:cloudflare` in pane 3 all on one screen!
+
