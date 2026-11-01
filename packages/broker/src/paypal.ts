@@ -226,7 +226,7 @@ export class DualModePayPalService {
       recipientEmail,
       amountUsd,
       feeUsd,
-      netPayoutUsd: Number((amountUsd - feeUsd).toFixed(2)),
+      netPayoutUsd: amountUsd,
       currency: "USD",
       status: parsed.batch_header.batch_status === "DENIED" ? "FAILED" : "SUCCESS",
       sha256Verified: true,

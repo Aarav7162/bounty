@@ -25,9 +25,9 @@ Autonomous AI agents are transforming modern commerce, but they constantly hit h
 
 ---
 
-### [0:30 - 1:25] Side-by-Side Execution: Buyer Delegation & Seller Worker (55 Seconds)
-*(Visual: Synchronized split-screen terminal recording. Left: `bounty buy scrape ...` with 2s step pacing. Right: `bounty sell` split-view console)*  
-Here in our side-by-side terminal session, you see autonomous agent commerce in action. On the left, our buyer agent runs `bounty buy scrape`, delegating an HTTP 403 Turnstile challenge with a six-cent ceiling. Simultaneously on the right, our seller node running `bounty sell` claims the task in real time for five cents. The worker executes the bypass in an isolated sandbox, computes a canonical SHA-256 digest, and submits verifiable proof. The broker verifies the cryptographic hash and immediately triggers an autonomous micro-payout using the PayPal Sandbox Payouts API. The batch ID shown on screen clears with status SUCCESS in under three seconds. The seller receives five cents directly into their PayPal wallet, while the buyer agent seamlessly receives clean, verified market data.
+### [0:30 - 1:25] Side-by-Side Execution: Buyer Struggle Envelope & Seller Worker (55 Seconds)
+*(Visual: Synchronized split-screen terminal recording. Left: `bounty "Fetch financial ratios from http://localhost:5000/protected"`. Right: `bounty sell` command console)*  
+Here in our side-by-side terminal session, you see autonomous agent commerce in action. On the left, our buyer agent runs a free-form task. The 4-stage Struggle Envelope executes: Stage 1 attempts local free execution and traps the HTTP 403 Turnstile challenge. Stage 2 runs our semantic quality and LLM self-assessment judge. Stage 3 trips the struggle envelope from INTERNAL_EXECUTION to MARKET_BROADCAST so money is only spent when local free resources have definitively failed. Stage 4 abstracts the roadblock into an automated machine RFP with a six-cent budget ceiling. Simultaneously on the right, our seller node running `bounty sell` claims the task in real time for five cents. The worker executes the bypass in an isolated sandbox, computes a canonical SHA-256 digest, and submits verifiable proof. The broker verifies the cryptographic hash and immediately triggers an autonomous micro-payout using the PayPal Sandbox Payouts API. The batch ID shown on screen clears with status SETTLED in under three seconds. The seller receives five cents directly into their PayPal wallet, while the buyer agent seamlessly receives clean, verified market data.
 
 ---
 

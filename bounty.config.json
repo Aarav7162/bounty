@@ -20,6 +20,11 @@
       "floorPriceUsd": 0.05,
       "maxConcurrency": 2,
       "description": "httpx + BeautifulSoup web scraping"
+    },
+    "residential_scrape": {
+      "floorPriceUsd": 0.05,
+      "maxConcurrency": 2,
+      "description": "Residential proxy routing with Cloudflare challenge bypass"
     }
   }
 }

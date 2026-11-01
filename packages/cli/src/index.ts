@@ -8,6 +8,7 @@ import { runInitCommand } from "./commands/init.js";
 import { runStartCommand } from "./commands/start.js";
 import { displayProfileCard, handleProfileSet, runProfileWizard } from "./commands/profile.js";
 import { runBuyScrapeCommand, runBuyOcrCommand, runBuyWizard } from "./commands/buy.js";
+import { runDoCommand } from "./commands/do.js";
 import { runLedgerCommand } from "./commands/ledger.js";
 import { runNodesCommand } from "./commands/nodes.js";
 import { runInteractiveShell } from "./commands/shell.js";
@@ -37,6 +38,20 @@ program
     } else {
       spawn("open", [videoPath], { detached: true, stdio: "ignore" }).unref();
     }
+  });
+
+program
+  .command("do <task...>")
+  .alias("run")
+  .description("Autonomous task execution with 4-stage Struggle Envelope monitoring")
+  .option("-b, --broker <url>", "Broker API URL")
+  .option("-m, --max-bid <amount>", "Maximum bid ceiling in USD")
+  .option("-t, --timeout <seconds>", "Local timeout window before delegation in seconds")
+  .option("--json", "Output response payload as raw JSON")
+  .option("--raw", "Output response payload as plain text")
+  .action(async (taskWords, options) => {
+    const taskGoal = Array.isArray(taskWords) ? taskWords.join(" ") : String(taskWords);
+    await runDoCommand(taskGoal, options);
   });
 
 const buyCommand = program
@@ -112,7 +127,8 @@ program
 
 program
   .command("init")
-  .description("Run the interactive configuration wizard for seller node setup")
+  .alias("config")
+  .description("Run the interactive configuration wizard for buyer & seller setup")
   .option("-y, --yes", "Accept default configuration automatically without prompt")
   .option("-e, --email <email>", "PayPal recipient email")
   .action(async (options) => {
@@ -147,13 +163,27 @@ program
     await runStartCommand(options);
   });
 
-if (!process.argv.slice(2).length) {
+const KNOWN_COMMANDS = new Set([
+  "video", "watch", "do", "run", "buy", "ledger", "nodes", "profile",
+  "init", "config", "server", "broker", "sell", "start", "worker", "help"
+]);
+
+const firstArg = process.argv[2];
+
+if (!firstArg) {
   runInteractiveShell().catch((err) => {
     console.error(err);
     process.exit(1);
   });
-} else {
+} else if (firstArg.startsWith("-") || KNOWN_COMMANDS.has(firstArg.toLowerCase())) {
   program.parse(process.argv);
+} else {
+  // Free-form task directly from CLI: bounty "fetch data..." or bounty scrape http://...
+  const taskGoal = process.argv.slice(2).join(" ");
+  runDoCommand(taskGoal, {}).catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 }
 
 export * from "./config.js";

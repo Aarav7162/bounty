@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
+import readline from "node:readline";
 import chalk from "chalk";
-import * as p from "@clack/prompts";
 import { generateRfpId, computePayloadDigest } from "@bounty/protocol";
 import { getActiveProfile, recordBuyerSpend } from "../profile.js";
 
@@ -32,7 +32,7 @@ export async function runBuyScrapeCommand(url: string, options: BuyOptions): Pro
   if (!isJsonOnly && !options.quiet) {
     console.log("");
     console.log(chalk.white.bold("  Bounty Buyer Delegation") + chalk.gray(` · RFP: ${rfpId}`));
-    console.log(chalk.gray("  " + "─".repeat(64)));
+    console.log(chalk.gray("  " + "─".repeat(68)));
   }
 
   // Step 1: Roadblock check
@@ -47,7 +47,7 @@ export async function runBuyScrapeCommand(url: string, options: BuyOptions): Pro
   }
 
   if (!isJsonOnly && !options.quiet) {
-    console.log(`  ${chalk.green("✔")}  ${chalk.white("Roadblock Trapped")}       ${chalk.gray(`[${statusTrapDesc}]`)}`);
+    console.log(`  ${chalk.cyan("[trap]")}     ${chalk.white("Roadblock Trapped")}       ${chalk.gray(`[${statusTrapDesc}]`)}`);
     if (pauseMs > 0) await sleep(pauseMs);
   }
 
@@ -75,8 +75,8 @@ export async function runBuyScrapeCommand(url: string, options: BuyOptions): Pro
   if (!rfpRes.ok) {
     const errText = await rfpRes.text();
     if (!isJsonOnly) {
-      console.log(`  ${chalk.red("✕")}  ${chalk.red("RFP Broadcast Failed")}    ${chalk.gray(`[${errText}]`)}`);
-      console.log(chalk.gray("  " + "─".repeat(64)));
+      console.log(`  ${chalk.red("[ERR]")}      ${chalk.red("RFP Broadcast Failed")}    ${chalk.gray(`[${errText}]`)}`);
+      console.log(chalk.gray("  " + "─".repeat(68)));
     }
     throw new Error(`Failed to match RFP: ${errText}`);
   }
@@ -85,10 +85,10 @@ export async function runBuyScrapeCommand(url: string, options: BuyOptions): Pro
   const assignment = matchData.assignment;
 
   if (!isJsonOnly && !options.quiet) {
-    console.log(`  ${chalk.green("✔")}  ${chalk.white("RFP Broadcasted")}         ${chalk.gray(`[web_scrape · Ceiling: $${bidCeiling.toFixed(2)}]`)}`);
+    console.log(`  ${chalk.cyan("[rfp]")}      ${chalk.white("RFP Broadcasted")}         ${chalk.gray(`[web_scrape · Ceiling: $${bidCeiling.toFixed(2)}]`)}`);
     if (pauseMs > 0) await sleep(pauseMs);
 
-    console.log(`  ${chalk.green("✔")}  ${chalk.white("Orderbook Matched")}       ${chalk.gray(`[Node: ${chalk.cyan(assignment.nodeId)} · $${assignment.agreedPriceUsd.toFixed(2)} USD]`)}`);
+    console.log(`  ${chalk.cyan("[match]")}    ${chalk.white("Orderbook Matched")}       ${chalk.gray(`[Node: ${chalk.cyan(assignment.nodeId)} · $${assignment.agreedPriceUsd.toFixed(2)} USD]`)}`);
     if (pauseMs > 0) await sleep(pauseMs);
   }
 
@@ -113,50 +113,54 @@ export async function runBuyScrapeCommand(url: string, options: BuyOptions): Pro
 
   if (!settledTask) {
     if (!isJsonOnly) {
-      console.log(`  ${chalk.red("✕")}  ${chalk.red("Execution Timeout")}       ${chalk.gray(`[No response within ${maxTimeout}ms]`)}`);
-      console.log(chalk.gray("  " + "─".repeat(64)));
+      console.log(`  ${chalk.red("[ERR]")}      ${chalk.red("Settlement Timeout")}       ${chalk.gray(`[Node ${assignment.nodeId} failed to report]`)}`);
+      console.log(chalk.gray("  " + "─".repeat(68)));
     }
-    throw new Error(`Timeout waiting for task ${rfpId} to settle`);
+    throw new Error(`Execution timed out waiting for worker ${assignment.nodeId}`);
   }
 
-  const resultPayload = settledTask.result.payload?.data ?? settledTask.result.payload;
+  const result = settledTask.result;
   const receipt = settledTask.receipt;
-  const payloadStr = JSON.stringify(resultPayload);
-  const payloadBytes = Buffer.byteLength(payloadStr, "utf8");
+  const verifiedDigest = computePayloadDigest(result.payload);
+  const isDigestValid = verifiedDigest === result.sha256Digest;
 
-  // Record spend in profile
   recordBuyerSpend(assignment.agreedPriceUsd);
 
   if (!isJsonOnly && !options.quiet) {
-    console.log(`  ${chalk.green("✔")}  ${chalk.white("Cryptographic Proof")}     ${chalk.gray(`[${payloadBytes} bytes · SHA-256 Verified]`)}`);
+    const proofLabel = isDigestValid ? `${result.sha256Digest.slice(0, 10)}... [verified]` : "INVALID";
+    console.log(`  ${chalk.cyan("[proof]")}    ${chalk.white("SHA-256 Verified")}        ${chalk.green(`[${proofLabel}]`)}`);
     if (pauseMs > 0) await sleep(pauseMs);
 
-    console.log(`  ${chalk.green("✔")}  ${chalk.white("PayPal Rails Settled")}    ${chalk.gray(`[Batch: ${chalk.yellow(receipt.paypalReferenceId)} · Status: ${chalk.green("SUCCESS")}]`)}`);
-    if (pauseMs > 0) await sleep(pauseMs);
+    console.log(`  ${chalk.green("[settle]")}   ${chalk.white("PayPal Rails Settled")}    ${chalk.green(`[Batch: ${receipt.paypalReferenceId} · $${assignment.agreedPriceUsd.toFixed(2)} USD]`)}`);
+    console.log(chalk.gray("  " + "─".repeat(68)));
 
-    const elapsedSec = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.log(chalk.gray("  " + "─".repeat(64)));
-    console.log(`  ${chalk.gray("Latency:")} ${chalk.white(`${elapsedSec}s`)}  ${chalk.gray("·")}  ${chalk.gray("Settlement:")} ${chalk.green(`$${assignment.agreedPriceUsd.toFixed(2)} USD`)}  ${chalk.gray("·")}  ${chalk.gray("Rails:")} ${chalk.yellow("PayPal Sandbox")}`);
+    const latencySec = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.log(`  ${chalk.gray("Status:")} ${chalk.green.bold("COMPLETED")}  ${chalk.gray("·")}  ${chalk.gray("Paid:")} ${chalk.yellow(`$${assignment.agreedPriceUsd.toFixed(2)} USD`)}  ${chalk.gray("·")}  ${chalk.gray("Time:")} ${chalk.white(`${latencySec}s`)}`);
     console.log("");
   }
 
-  // Print output
+  const payload = result.payload?.data ?? result.payload;
   if (options.json) {
-    console.log(JSON.stringify(resultPayload, null, 2));
+    console.log(JSON.stringify(payload, null, 2));
   } else if (options.raw) {
-    console.log(typeof resultPayload === "string" ? resultPayload : JSON.stringify(resultPayload));
-  } else {
-    console.log(chalk.gray("[MOCK DATA: simulated market prices from local test server]"));
-    console.log(JSON.stringify(resultPayload, null, 2));
+    console.log(typeof payload === "string" ? payload : JSON.stringify(payload));
+  } else if (!options.quiet) {
+    console.log(chalk.gray("  [Task Output]"));
+    console.log(JSON.stringify(payload, null, 2));
+    console.log("");
   }
 }
 
 export async function runBuyOcrCommand(imagePath: string, options: BuyOptions): Promise<void> {
-  const resolvedPath = resolve(process.cwd(), imagePath);
-  if (!existsSync(resolvedPath)) {
-    throw new Error(`Image file not found: ${resolvedPath}`);
+  const fullPath = resolve(process.cwd(), imagePath);
+  if (!existsSync(fullPath)) {
+    console.error(chalk.red(`  [ERROR] Image file not found: ${fullPath}`));
+    process.exit(1);
   }
-  const imageBase64 = readFileSync(resolvedPath, "base64");
+
+  const imageBuffer = readFileSync(fullPath);
+  const imageBase64 = imageBuffer.toString("base64");
+
   const { profile } = getActiveProfile();
   const brokerUrl = options.broker ?? profile.seller.brokerUrl.replace("/ws/seller", "").replace("/ws/buyer", "") ?? "http://localhost:4000";
   const apiBase = brokerUrl.startsWith("http") ? brokerUrl : `http://${brokerUrl.replace(/^ws:\/\//, "")}`;
@@ -187,7 +191,7 @@ export async function runBuyOcrCommand(imagePath: string, options: BuyOptions): 
   }
 
   const { assignment } = (await rfpRes.json()) as any;
-  console.log(chalk.green(`✔ Matched OCR worker ${assignment.nodeId} for $${assignment.agreedPriceUsd.toFixed(2)}`));
+  console.log(`  ${chalk.cyan("[match]")}    Matched OCR worker ${assignment.nodeId} for $${assignment.agreedPriceUsd.toFixed(2)} USD`);
 
   // Poll for result
   const maxTimeout = options.timeout ? parseInt(options.timeout, 10) : 15000;
@@ -209,47 +213,44 @@ export async function runBuyOcrCommand(imagePath: string, options: BuyOptions): 
   if (!settledTask) throw new Error("Timeout waiting for OCR result");
   recordBuyerSpend(assignment.agreedPriceUsd);
   const text = settledTask.result.payload?.text ?? settledTask.result.payload;
-  console.log(chalk.green(`✔ Settled via PayPal: Batch ${settledTask.receipt.paypalReferenceId}`));
-  console.log("\n--- EXTRACTED OCR TEXT ---");
+  console.log(`  ${chalk.green("[settle]")}   Settled via PayPal: Batch ${settledTask.receipt.paypalReferenceId}`);
+  console.log("\n  [Extracted OCR Text]");
   console.log(text);
 }
 
 export async function runBuyWizard(): Promise<void> {
-  p.intro(chalk.bgCyan.black(" BOUNTY BUYER DELEGATION WIZARD "));
+  console.log("");
+  console.log(chalk.white.bold("  Bounty Buyer Delegation Wizard"));
+  console.log(chalk.gray("  " + "─".repeat(68)));
+  console.log(chalk.gray("  1) Web Scrape (with anti-bot / Turnstile bypass)"));
+  console.log(chalk.gray("  2) OCR Text Extraction (extract text from image bytes)"));
+  console.log(chalk.gray("  3) Python Sandbox Code Execution"));
+  console.log("");
 
-  const capability = await p.select({
-    message: "What roadblock task would you like to delegate?",
-    options: [
-      { value: "web_scrape", label: "Web Scrape (with anti-bot / Turnstile bypass)" },
-      { value: "ocr", label: "Optical Character Recognition (extract text from image)" },
-      { value: "python_code", label: "Python Sandbox Code Execution (with unit tests)" }
-    ]
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
   });
-  if (p.isCancel(capability)) return;
 
-  if (capability === "web_scrape") {
-    const targetUrl = await p.text({
-      message: "Target URL to scrape:",
-      initialValue: "http://localhost:5000/protected"
-    });
-    if (p.isCancel(targetUrl)) return;
+  const prompt = (q: string, def: string) =>
+    new Promise<string>((res) =>
+      rl.question(chalk.gray(`  ${q} `) + chalk.cyan(`[${def}]: `), (ans) => res(ans.trim() || def))
+    );
 
-    const maxBid = await p.text({
-      message: "Max budget ceiling ($ USD):",
-      initialValue: "0.06"
-    });
-    if (p.isCancel(maxBid)) return;
+  try {
+    const choice = await prompt("Select delegation capability (1/2/3)", "1");
 
-    await runBuyScrapeCommand(targetUrl as string, { maxBid: maxBid as string });
-  } else if (capability === "ocr") {
-    const imgPath = await p.text({
-      message: "Path to image file:",
-      placeholder: "./receipt.png"
-    });
-    if (p.isCancel(imgPath)) return;
-    await runBuyOcrCommand(imgPath as string, {});
-  } else {
-    p.outro(chalk.yellow("Python code delegation available via: bounty buy code <file.py>"));
+    if (choice === "1" || choice.toLowerCase() === "scrape") {
+      const targetUrl = await prompt("Target URL to scrape", "http://localhost:5000/protected");
+      const maxBid = await prompt("Max budget ceiling ($ USD)", "0.06");
+      await runBuyScrapeCommand(targetUrl, { maxBid });
+    } else if (choice === "2" || choice.toLowerCase() === "ocr") {
+      const imgPath = await prompt("Path to image file", "./receipt.png");
+      await runBuyOcrCommand(imgPath, {});
+    } else {
+      console.log(chalk.yellow("  Python code delegation available via: bounty buy code <file.py>"));
+    }
+  } finally {
+    rl.close();
   }
 }
-

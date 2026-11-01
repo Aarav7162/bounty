@@ -195,7 +195,12 @@ export class MatchingEngine extends EventEmitter {
       if (!node.socket || node.socket.readyState !== (node.socket.OPEN ?? 1)) {
         continue;
       }
-      const capConfig = node.capabilities.get(rfp.capability);
+      let capConfig = node.capabilities.get(rfp.capability);
+      if (!capConfig && rfp.capability === "residential_scrape") {
+        capConfig = node.capabilities.get("web_scrape");
+      } else if (!capConfig && rfp.capability === "web_scrape") {
+        capConfig = node.capabilities.get("residential_scrape");
+      }
       if (!capConfig) continue;
 
       // Check concurrency capacity
@@ -394,7 +399,7 @@ export class MatchingEngine extends EventEmitter {
 
     // Update node metrics
     if (node) {
-      node.totalEarnedUsd += receipt.netPayoutUsd;
+      node.totalEarnedUsd += receipt.amountUsd;
       node.tasksCompleted += 1;
 
       // Notify seller node of verified result and settlement

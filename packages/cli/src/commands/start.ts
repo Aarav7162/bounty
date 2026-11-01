@@ -40,13 +40,13 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
 
     try {
       ws = new WebSocket(brokerUrl);
-    } catch (err: any) {
+    } catch {
       tui.setStatus("DISCONNECTED");
       if (!hasLoggedDisconnect) {
         tui.addEvent(
-          chalk.yellow("⏳"),
+          "[WAIT]",
           "Waiting for Broker Hub",
-          "Broker offline at " + brokerUrl + " (Start with: npm run start or bounty server)"
+          "Broker offline at " + brokerUrl + " (Start with: bounty server)"
         );
         hasLoggedDisconnect = true;
       }
@@ -57,7 +57,7 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
     ws.on("open", () => {
       hasLoggedDisconnect = false;
       tui.setStatus(isPaused ? "PAUSED" : "ONLINE");
-      tui.addEvent(chalk.green("●"), "Connected to Broker Hub", brokerUrl, chalk.green);
+      tui.addEvent("[OK]", "Connected to Broker Hub", brokerUrl, chalk.green);
 
       // Build capability registration list
       const capRegistrations: CapabilityRegistration[] = Object.entries(config!.capabilities).map(
@@ -88,7 +88,7 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
         switch (msg.type) {
           case "REGISTERED": {
             tui.addEvent(
-              chalk.green("✓"),
+              "[OK]",
               `Connected to broker  ·  ${instanceNodeId.slice(0, 18)}`
             );
             tui.setActiveStep({ spinner: true, text: "Waiting for tasks..." });
@@ -112,14 +112,14 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
             const ceilingStr = `$${(assignment.agreedPriceUsd * 1.2).toFixed(2)}`;
 
             tui.addEvent(
-              chalk.green("✓"),
+              "[TASK]",
               `Task received: "${taskGoal.slice(0, 34)}"`,
               `${ceilingStr} ceiling`
             );
 
             tui.addEvent(
-              chalk.green("✓"),
-              `Bid submitted: $${assignment.agreedPriceUsd.toFixed(2)}`
+              "[BID]",
+              `Bid submitted: $${assignment.agreedPriceUsd.toFixed(2)} USD`
             );
 
             tui.setActiveStep({ spinner: true, text: "Executing in sandbox..." });
@@ -128,7 +128,7 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
             const result = await sandbox.executeTask(assignment);
 
             tui.addEvent(
-              chalk.green("✓"),
+              "[PROOF]",
               `SHA-256 hash computed: sha256:${result.sha256Digest.slice(0, 10)}...`
             );
 
@@ -145,7 +145,6 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
           }
 
           case "TASK_VERIFIED": {
-            // Verification status event
             break;
           }
 
@@ -158,8 +157,8 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
             recordSellerEarnings(receipt.amountUsd);
 
             tui.addEvent(
-              chalk.green("✓"),
-              `PAID  ·  Batch: ${shortBatch}  ·  $${receipt.amountUsd.toFixed(2)}  ·  PAYOUT_SUCCESS`,
+              "[PAID]",
+              `PAID  ·  Batch: ${shortBatch}  ·  $${receipt.amountUsd.toFixed(2)} USD  ·  PAYOUT_SUCCESS`,
               undefined,
               chalk.green.bold
             );
@@ -170,7 +169,7 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
             break;
         }
       } catch (err: any) {
-        tui.addEvent(chalk.red("✕"), "Message parse error", err.message);
+        tui.addEvent("[ERR]", "Message parse error", err.message);
       }
     });
 
@@ -180,13 +179,13 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
       scheduleReconnect();
     });
 
-    ws.on("error", (err: any) => {
+    ws.on("error", () => {
       tui.setStatus("DISCONNECTED");
       if (!hasLoggedDisconnect) {
         tui.addEvent(
-          chalk.yellow("⏳"),
+          "[WAIT]",
           "Waiting for Broker Hub",
-          "Broker offline at " + brokerUrl + " (Start with: npm run start or bounty server)"
+          "Broker offline at " + brokerUrl + " (Start with: bounty server)"
         );
         hasLoggedDisconnect = true;
       }
@@ -211,7 +210,7 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
       ws.close(1000, "Node exiting cleanly");
     }
 
-    console.log(chalk.gray("\n  ✓ Bounty Node disconnected cleanly.\n"));
+    console.log(chalk.gray("\n  [OK] Bounty Node disconnected cleanly.\n"));
     process.exit(0);
   };
 

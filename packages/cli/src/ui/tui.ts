@@ -6,7 +6,7 @@ import { BountyConfig } from "../config.js";
 import { fitString } from "./layout.js";
 
 export interface LogItem {
-  icon: string;
+  tag: string;
   text: string;
   detail?: string;
   color?: (str: string) => string;
@@ -81,27 +81,27 @@ export class BountyTUI {
         } else if (cmd === "pause" || cmd === "p") {
           this.state.status = "PAUSED";
           this.onPauseCallback?.(true);
-          this.addEvent(chalk.yellow("❚❚"), "Worker bidding paused");
+          this.addEvent("[PAUSED]", "Worker bidding paused");
         } else if (cmd === "resume" || cmd === "r") {
           this.state.status = "ONLINE";
           this.onPauseCallback?.(false);
-          this.addEvent(chalk.green("●"), "Worker bidding resumed");
+          this.addEvent("[ONLINE]", "Worker bidding resumed");
         } else if (cmd === "balance" || cmd === "b") {
-          this.addEvent(chalk.yellow("$"), `Lifetime Earned: $${this.state.lifetimeEarnedUsd.toFixed(2)} USD`);
+          this.addEvent("[BAL]", `Lifetime Earned: $${this.state.lifetimeEarnedUsd.toFixed(2)} USD`);
         } else if (cmd === "caps" || cmd === "capabilities" || cmd === "c") {
           const capList = Object.entries(this.state.config.capabilities)
             .map(([k, v]) => `${k} ($${v.floorPriceUsd.toFixed(2)})`)
             .join(", ");
-          this.addEvent(chalk.cyan("⚙"), `Capabilities: ${capList}`);
+          this.addEvent("[CAPS]", `Capabilities: ${capList}`);
         } else if (cmd === "stats" || cmd === "s") {
-          this.addEvent(chalk.cyan("ℹ"), `Jobs: ${this.state.jobsCompleted} · Active Nodes: ${this.state.nodesOnline}`);
+          this.addEvent("[STAT]", `Jobs: ${this.state.jobsCompleted} · Active Nodes: ${this.state.nodesOnline}`);
         } else if (cmd === "clear") {
           this.state.jobEvents = [];
           this.render();
         } else if (cmd === "help" || cmd === "?") {
-          this.addEvent(chalk.gray("Commands: pause | resume | balance | caps | stats | clear | exit"), "");
+          this.addEvent("[INFO]", "Commands: pause | resume | balance | caps | stats | clear | exit");
         } else {
-          this.addEvent(chalk.yellow("!"), `Unknown command: ${cmd} (type help for list)`);
+          this.addEvent("[WARN]", `Unknown command: ${cmd} (type help for list)`);
         }
 
         this.render();
@@ -125,8 +125,8 @@ export class BountyTUI {
     this.render();
   }
 
-  public addEvent(icon: string, text: string, detail?: string, color?: (str: string) => string): void {
-    this.state.jobEvents.push({ icon, text, detail, color });
+  public addEvent(tag: string, text: string, detail?: string, color?: (str: string) => string): void {
+    this.state.jobEvents.push({ tag, text, detail, color });
     if (this.state.jobEvents.length > 10) {
       this.state.jobEvents.shift();
     }
@@ -146,7 +146,7 @@ export class BountyTUI {
     this.renderTimer = setInterval(() => {
       this.spinnerIndex = (this.spinnerIndex + 1) % spinner.frames.length;
       this.render();
-    }, 200);
+    }, 250);
     this.render();
     if (this.rl) {
       this.rl.prompt();
@@ -170,12 +170,12 @@ export class BountyTUI {
     const { status, config, brokerUrl, nodesOnline, activeStep, jobEvents, lifetimeEarnedUsd, jobsCompleted, lastPayoutBatchId } = this.state;
 
     // Header styling
-    const brand = chalk.cyan.bold("BOUNTY NODE");
+    const brand = chalk.white.bold("BOUNTY NODE");
     const ver = chalk.gray("v1.0.0");
-    let statusPill = chalk.bgHex("#065f46").hex("#34d399").bold(" ● ONLINE ");
-    if (status === "PAUSED") statusPill = chalk.bgHex("#78350f").hex("#fbbf24").bold(" ❚❚ PAUSED ");
-    if (status === "CONNECTING") statusPill = chalk.bgHex("#1e293b").hex("#38bdf8").bold(" ⠋ CONNECTING ");
-    if (status === "DISCONNECTED") statusPill = chalk.bgHex("#7f1d1d").hex("#fca5a5").bold(" ✕ DISCONNECTED ");
+    let statusPill = chalk.bgHex("#065f46").white.bold(" [ONLINE] ");
+    if (status === "PAUSED") statusPill = chalk.bgHex("#78350f").yellow.bold(" [PAUSED] ");
+    if (status === "CONNECTING") statusPill = chalk.bgHex("#1e293b").cyan.bold(" [CONNECTING] ");
+    if (status === "DISCONNECTED") statusPill = chalk.bgHex("#7f1d1d").white.bold(" [DISCONNECTED] ");
 
     const leftColWidth = 52;
     const rightColWidth = 36;
@@ -193,12 +193,12 @@ export class BountyTUI {
       for (const ev of jobEvents.slice(-7)) {
         const text = ev.color ? ev.color(ev.text) : ev.text;
         const detailStr = ev.detail ? chalk.gray(`  ${ev.detail}`) : "";
-        leftLines.push(`  ${ev.icon}  ${text}${detailStr}`);
+        leftLines.push(`  ${chalk.cyan(ev.tag)}  ${text}${detailStr}`);
       }
     }
 
     if (activeStep) {
-      const icon = activeStep.spinner ? chalk.cyan(spinner) : chalk.cyan("›");
+      const icon = activeStep.spinner ? chalk.cyan(spinner) : chalk.cyan(">");
       leftLines.push(`  ${icon}  ${chalk.white(activeStep.text)}`);
     } else if (status === "ONLINE") {
       leftLines.push(`  ${chalk.cyan(spinner)}  ${chalk.gray("Waiting for tasks on orderbook...")}`);

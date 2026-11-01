@@ -17,11 +17,14 @@ export const ProfileDataSchema = z.object({
   name: z.string().default("Developer Node"),
   email: z.string().email().default("sb-sqcdl53128062@personal.example.com"),
   role: z.enum(["buyer", "seller", "both"]).default("both"),
+  configured: z.boolean().default(false),
   buyer: z.object({
     defaultBidCeilingUsd: z.number().default(0.06),
     defaultTimeoutMs: z.number().default(30000),
+    maxLocalAttempts: z.number().default(2),
+    localTimeoutSeconds: z.number().default(15),
     autoApproveBelowUsd: z.number().default(0.10)
-  }).default({ defaultBidCeilingUsd: 0.06, defaultTimeoutMs: 30000, autoApproveBelowUsd: 0.10 }),
+  }).default({ defaultBidCeilingUsd: 0.06, defaultTimeoutMs: 30000, maxLocalAttempts: 2, localTimeoutSeconds: 15, autoApproveBelowUsd: 0.10 }),
   seller: z.object({
     nodeId: z.string().default("node_mumbai_01"),
     brokerUrl: z.string().url().default("ws://localhost:4000/ws/seller"),
@@ -93,6 +96,23 @@ export function getProfileDir(): string {
 
 export function getProfilePath(): string {
   return resolve(getProfileDir(), "profile.json");
+}
+
+export function hasProfileConfig(): boolean {
+  return existsSync(getProfilePath());
+}
+
+export function isProfileConfigured(): boolean {
+  if (!existsSync(getProfilePath())) return false;
+  try {
+    const raw = readFileSync(getProfilePath(), "utf8");
+    const parsed = JSON.parse(raw);
+    const active = parsed.activeProfile || "default";
+    const prof = parsed.profiles?.[active];
+    return Boolean(prof?.configured);
+  } catch {
+    return false;
+  }
 }
 
 export function loadProfileConfig(): GlobalProfileConfig {

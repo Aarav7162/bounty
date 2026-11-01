@@ -16,8 +16,8 @@
     "test": "tsx --test test/cli-lifecycle.test.ts"
   },
   "dependencies": {
+    "@bounty/agent-sdk": "*",
     "@bounty/protocol": "*",
-    "@clack/prompts": "^0.9.1",
     "chalk": "^5.4.1",
     "cli-spinners": "^3.1.2",
     "commander": "^13.1.0",
