@@ -25,6 +25,7 @@ export async function runRootMenu(): Promise<void> {
       { value: "ledger", label: "📊 Settlement Ledger", hint: "Inspect live PayPal batches & transaction proofs" },
       { value: "nodes", label: "🌐 Orderbook Mesh", hint: "View active seller nodes and floor prices" },
       { value: "profile", label: "👤 Operator Profile", hint: "View & configure identity, pricing, and limits" },
+      { value: "video", label: "🎬 Watch SaaS Launch Video", hint: "Play the 2m 30s side-by-side demonstration" },
       { value: "exit", label: "✕ Exit" }
     ]
   });
@@ -43,6 +44,11 @@ export async function runRootMenu(): Promise<void> {
     await runNodesCommand({});
   } else if (choice === "profile") {
     displayProfileCard();
+  } else if (choice === "video") {
+    const { spawn } = await import("node:child_process");
+    const videoPath = "c:\\Users\\aarav.SOMEGUYWITHPRET\\Bounty\\docs\\videos\\bounty_side_by_side_saas_launch_2m30s.mp4";
+    console.log(chalk.cyan("Launching official Bounty 2m 30s SaaS launch video..."));
+    spawn("cmd.exe", ["/c", "start", "", videoPath], { detached: true, stdio: "ignore" }).unref();
   }
 }
 

@@ -24,6 +24,21 @@ program
   .description("Bounty Seller Node CLI: Autonomous Agent Subcontracting & PayPal Micro-Settlements")
   .version("1.0.0");
 
+program
+  .command("video")
+  .alias("watch")
+  .description("Play the official Bounty 2m 30s SaaS launch video")
+  .action(() => {
+    const videoPath = "c:\\Users\\aarav.SOMEGUYWITHPRET\\Bounty\\docs\\videos\\bounty_side_by_side_saas_launch_2m30s.mp4";
+    console.log(chalk.cyan("Launching official Bounty 2m 30s SaaS launch video..."));
+    const isWin = process.platform === "win32";
+    if (isWin) {
+      spawn("cmd.exe", ["/c", "start", "", videoPath], { detached: true, stdio: "ignore" }).unref();
+    } else {
+      spawn("open", [videoPath], { detached: true, stdio: "ignore" }).unref();
+    }
+  });
+
 const buyCommand = program
   .command("buy [capability] [target]")
   .description("Delegate / subcontract an execution roadblock to the Bounty network (Buyer Mode)")
