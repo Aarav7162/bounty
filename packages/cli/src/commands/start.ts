@@ -29,6 +29,7 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
   let isShuttingDown = false;
   let isPaused = false;
   let reconnectTimer: NodeJS.Timeout | null = null;
+  let hasLoggedDisconnect = false;
 
   const connectToBroker = () => {
     if (isShuttingDown) return;
@@ -39,13 +40,22 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
       ws = new WebSocket(brokerUrl);
     } catch (err: any) {
       tui.setStatus("DISCONNECTED");
-      tui.addEvent(chalk.red("✕"), "Connection failed", err.message);
+      if (!hasLoggedDisconnect) {
+        tui.addEvent(
+          chalk.yellow("⏳"),
+          "Waiting for Broker Hub",
+          "Broker offline at " + brokerUrl + " (Start with: npm run start or bounty server)"
+        );
+        hasLoggedDisconnect = true;
+      }
       scheduleReconnect();
       return;
     }
 
     ws.on("open", () => {
+      hasLoggedDisconnect = false;
       tui.setStatus(isPaused ? "PAUSED" : "ONLINE");
+      tui.addEvent(chalk.green("●"), "Connected to Broker Hub", brokerUrl, chalk.green);
 
       // Build capability registration list
       const capRegistrations: CapabilityRegistration[] = Object.entries(config!.capabilities).map(
@@ -167,9 +177,16 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
       scheduleReconnect();
     });
 
-    ws.on("error", (err) => {
+    ws.on("error", (err: any) => {
       tui.setStatus("DISCONNECTED");
-      tui.addEvent(chalk.red("✕"), "Socket error", err.message);
+      if (!hasLoggedDisconnect) {
+        tui.addEvent(
+          chalk.yellow("⏳"),
+          "Waiting for Broker Hub",
+          "Broker offline at " + brokerUrl + " (Start with: npm run start or bounty server)"
+        );
+        hasLoggedDisconnect = true;
+      }
     });
   };
 

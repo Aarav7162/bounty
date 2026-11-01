@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import dotenv from "dotenv";
+import chalk from "chalk";
 import { resolve } from "node:path";
+import { spawn } from "node:child_process";
 import { runInitCommand } from "./commands/init.js";
 import { runStartCommand } from "./commands/start.js";
 
@@ -24,6 +26,23 @@ program
   .option("-e, --email <email>", "PayPal recipient email")
   .action(async (options) => {
     await runInitCommand(options);
+  });
+
+program
+  .command("server")
+  .alias("broker")
+  .description("Launch the Bounty Broker Hub and AG Grid Telemetry Dashboard")
+  .action(() => {
+    const projectDir = "c:/Users/aarav.SOMEGUYWITHPRET/Bounty";
+    console.log(chalk.cyan("Launching Bounty Broker Hub (port 4000) & AG Grid Dashboard (port 5173)..."));
+    const isWin = process.platform === "win32";
+    const proc = spawn(isWin ? "npm.cmd" : "npm", ["run", "start"], {
+      cwd: projectDir,
+      stdio: "inherit",
+      shell: true,
+      env: process.env
+    });
+    proc.on("exit", (code) => process.exit(code || 0));
   });
 
 program
