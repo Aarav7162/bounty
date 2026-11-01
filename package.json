@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "start": "tsx scripts/start-all.ts",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build --workspace=@bounty/protocol && npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present",
     "cli": "npm run dev --workspace=@bounty/cli",
