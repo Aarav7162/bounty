@@ -94,7 +94,7 @@ export async function runBuyScrapeCommand(url: string, options: BuyOptions): Pro
   }
 
   // Step 3: Poll for Settlement & Verified Result
-  const maxTimeout = options.timeout ? parseInt(options.timeout, 10) : profile.buyer.defaultTimeoutMs;
+  const maxTimeout = options.timeout ? parseInt(options.timeout, 10) : (profile.buyer.defaultTimeoutMs || 30000);
   const startPoll = Date.now();
   let settledTask: any = null;
 
@@ -254,3 +254,4 @@ export async function runBuyWizard(): Promise<void> {
     p.outro(chalk.yellow("Python code delegation available via: bounty buy code <file.py>"));
   }
 }
+

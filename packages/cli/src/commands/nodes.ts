@@ -58,3 +58,4 @@ export async function runNodesCommand(options: NodesOptions): Promise<void> {
     console.error(chalk.yellow(`  Start the broker in another terminal using: bounty server\n`));
   }
 }
+

@@ -115,3 +115,4 @@ Write-Host "`n✔ Side-by-side terminals launched successfully!" -ForegroundColo
 Write-Host "  Left Window (0,0,640,720):   Buyer Agent delegating Turnstile bypass" -ForegroundColor White
 Write-Host "  Right Window (640,0,640,720): Seller Node receiving task & earning PayPal payout" -ForegroundColor White
 Write-Host "`nOBS Recording Region: 1280 x 720 starting at Top-Left (0, 0)." -ForegroundColor Cyan
+

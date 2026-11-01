@@ -59,3 +59,4 @@ export async function runLedgerCommand(options: LedgerOptions): Promise<void> {
     console.error(chalk.yellow(`  Start the broker in another terminal using: bounty server\n`));
   }
 }
+

@@ -19,9 +19,9 @@ export const ProfileDataSchema = z.object({
   role: z.enum(["buyer", "seller", "both"]).default("both"),
   buyer: z.object({
     defaultBidCeilingUsd: z.number().default(0.06),
-    defaultTimeoutMs: z.number().default(10000),
+    defaultTimeoutMs: z.number().default(30000),
     autoApproveBelowUsd: z.number().default(0.10)
-  }).default({}),
+  }).default({ defaultBidCeilingUsd: 0.06, defaultTimeoutMs: 30000, autoApproveBelowUsd: 0.10 }),
   seller: z.object({
     nodeId: z.string().default("node_mumbai_01"),
     brokerUrl: z.string().url().default("ws://localhost:4000/ws/seller"),

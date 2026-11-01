@@ -45,3 +45,4 @@ export async function runRootMenu(): Promise<void> {
     displayProfileCard();
   }
 }
+
