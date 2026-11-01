@@ -36,3 +36,9 @@ yarn-error.log*
 Thumbs.db
 .DS_Store
 
+# Context & Scratch files
+context.md
+*.scratch.*
+scratch/
+bounty.step3.config.json
+

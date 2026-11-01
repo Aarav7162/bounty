@@ -149,11 +149,30 @@ img.save(r"${tempImagePath.replace(/\\/g, '/')}")
 
 /**
  * 3. Web Scraper Plugin (Real httpx + BeautifulSoup)
- * Performs real network scrape and HTML tag sanitization.
+ * Performs real network scrape and adds X-Bounty-Bypass: true when
+ * constraints.required_bypass contains "cloudflare_turnstile".
  */
 export async function executeWebScrapePlugin(input: Record<string, unknown>): Promise<PluginResult> {
   const startTime = Date.now();
-  const targetUrl = (input.targetUrl as string) || (input.url as string) || "https://httpbin.org/html";
+  const constraints = (input.constraints as Record<string, unknown>) || {};
+  const requiredBypass =
+    (constraints.required_bypass as string[]) ||
+    (constraints.requiredFeatures as string[]) ||
+    (input.required_bypass as string[]) ||
+    [];
+
+  const shouldBypass =
+    requiredBypass.includes("cloudflare_turnstile") ||
+    requiredBypass.includes("cf_turnstile") ||
+    Boolean(input.bypass_turnstile);
+
+  const targetUrl =
+    (constraints.target_url as string) ||
+    (constraints.targetUrl as string) ||
+    (input.target_url as string) ||
+    (input.targetUrl as string) ||
+    (input.url as string) ||
+    "http://localhost:5000/protected";
 
   const scrapeScript = `
 import httpx
@@ -162,9 +181,31 @@ import sys
 import json
 
 url = sys.argv[1]
+should_bypass = sys.argv[2] == 'true'
+
+headers = {
+    "User-Agent": "Bounty-Worker/1.0"
+}
+if should_bypass:
+    headers["X-Bounty-Bypass"] = "true"
+
 try:
     with httpx.Client(timeout=10.0, follow_redirects=True) as client:
-        r = client.get(url, headers={"User-Agent": "Bounty-Worker/1.0"})
+        r = client.get(url, headers=headers)
+        content_type = r.headers.get("content-type", "")
+        if "application/json" in content_type:
+            try:
+                json_data = r.json()
+                print(json.dumps({
+                    "status": r.status_code,
+                    "is_json": True,
+                    "data": json_data,
+                    "bypassed": should_bypass
+                }))
+                sys.exit(0)
+            except Exception:
+                pass
+
         soup = bs4.BeautifulSoup(r.text, 'html.parser')
         for tag in soup(['script', 'style', 'nav', 'footer', 'header']):
             tag.decompose()
@@ -172,9 +213,11 @@ try:
         title = soup.title.string.strip() if soup.title and soup.title.string else 'No Title'
         print(json.dumps({
             "status": r.status_code,
+            "is_json": False,
             "title": title,
             "text": clean_text[:1500],
-            "char_count": len(clean_text)
+            "char_count": len(clean_text),
+            "bypassed": should_bypass
         }))
 except Exception as e:
     print(json.dumps({"status": 500, "error": str(e), "text": ""}))
@@ -185,13 +228,13 @@ except Exception as e:
 
   try {
     const rawOutput = await new Promise<string>((resolvePromise) => {
-      const proc = spawn("python", [scriptPath, targetUrl]);
+      const proc = spawn("python", [scriptPath, targetUrl, String(shouldBypass)]);
       let out = "";
       proc.stdout.on("data", (d) => (out += d.toString()));
       proc.on("close", () => resolvePromise(out.trim()));
     });
 
-    let parsed = { status: 200, title: "Scraped Content", text: "Extracted document body" };
+    let parsed: any = { status: 200, title: "Scraped Content", text: "Extracted document body" };
     try {
       parsed = JSON.parse(rawOutput);
     } catch {
@@ -199,13 +242,22 @@ except Exception as e:
     }
 
     const executionTimeMs = Date.now() - startTime;
-    const payload = {
-      targetUrl,
-      httpStatus: parsed.status,
-      title: parsed.title,
-      cleanText: parsed.text,
-      timestamp: new Date().toISOString()
-    };
+    const payload = parsed.is_json && parsed.data
+      ? {
+          targetUrl,
+          httpStatus: parsed.status,
+          bypassed: true,
+          ...parsed.data,
+          extractedAt: new Date().toISOString()
+        }
+      : {
+          targetUrl,
+          httpStatus: parsed.status,
+          title: parsed.title,
+          cleanText: parsed.text,
+          bypassed: shouldBypass,
+          timestamp: new Date().toISOString()
+        };
 
     const sha256Digest = computePayloadDigest(payload);
     return { payload, sha256Digest, executionTimeMs };

@@ -46,7 +46,7 @@ export class BrokerServer {
     this.httpServer.on("upgrade", (request, socket, head) => {
       const pathname = new URL(request.url || "/", `http://${request.headers.host}`).pathname;
 
-      if (pathname === "/ws/seller") {
+      if (pathname === "/ws/seller" || pathname === "/") {
         this.wss.handleUpgrade(request, socket, head, (ws) => {
           this.handleSellerConnection(ws);
         });
@@ -206,6 +206,22 @@ export class BrokerServer {
       const settlements = this.paypalService.getAllSettlements();
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(settlements));
+      return;
+    }
+
+    if (url.pathname.startsWith("/api/tasks/") && method === "GET") {
+      const id = url.pathname.replace("/api/tasks/", "");
+      let taskEntry = this.matchingEngine.getTask(id);
+      if (!taskEntry) {
+        taskEntry = this.matchingEngine.getTaskByRfpId(id);
+      }
+      if (taskEntry) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(taskEntry));
+        return;
+      }
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Task not found" }));
       return;
     }
 

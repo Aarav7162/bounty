@@ -234,7 +234,10 @@ export class MatchingEngine extends EventEmitter {
       nodeId: winner.node.nodeId,
       sellerPaypalEmail: winner.node.paypalEmail,
       agreedPriceUsd: agreedPrice,
-      inputPayload: rfp.inputPayload,
+      inputPayload: {
+        ...rfp.inputPayload,
+        constraints: rfp.constraints
+      },
       capability: rfp.capability,
       deadlineAt: new Date(Date.now() + rfp.constraints.maxLatencyMs).toISOString(),
       assignedAt: new Date().toISOString()
@@ -280,6 +283,7 @@ export class MatchingEngine extends EventEmitter {
     }
 
     const { rfp, assignment } = taskEntry;
+    taskEntry.result = result;
     const node = this.nodes.get(result.nodeId);
 
     // Release node lock
@@ -416,6 +420,10 @@ export class MatchingEngine extends EventEmitter {
       if (entry.assignment?.taskId === taskId) return entry;
     }
     return undefined;
+  }
+
+  public getTaskByRfpId(rfpId: string) {
+    return this.tasks.get(rfpId);
   }
 
   public stop(): void {

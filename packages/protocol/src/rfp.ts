@@ -54,7 +54,49 @@ export type TaskStatus = z.infer<typeof TaskStatusEnum>;
 /**
  * Request for Proposal (RFP) emitted by Buyer Agent when hitting a bottleneck
  */
-export const RFPRequestSchema = z.object({
+export const RFPRequestSchema = z.preprocess((val: any) => {
+  if (typeof val !== "object" || val === null) return val;
+  const copy = { ...val };
+  if (!copy.capability && copy.capability_required) {
+    copy.capability = copy.capability_required;
+  }
+  if (!copy.taskGoal && copy.task_goal) {
+    copy.taskGoal = copy.task_goal;
+  }
+  if (!copy.taskGoal) {
+    copy.taskGoal = `Execute ${copy.capability || "sub-task"}`;
+  }
+  if (!copy.buyerId && copy.buyer_id) {
+    copy.buyerId = copy.buyer_id;
+  }
+  if (!copy.buyerId) {
+    copy.buyerId = "buyer_agent_alpha";
+  }
+  if (!copy.inputPayload) {
+    copy.inputPayload = copy.input_payload || { targetUrl: copy.constraints?.target_url || copy.constraints?.targetUrl };
+  }
+  if (copy.constraints) {
+    const c = { ...copy.constraints };
+    if (!c.targetUrl && c.target_url) c.targetUrl = c.target_url;
+    if (!c.requiredFeatures && c.required_bypass) c.requiredFeatures = c.required_bypass;
+    if (!c.outputFormat) c.outputFormat = "application/json";
+    copy.constraints = c;
+  } else {
+    copy.constraints = { outputFormat: "application/json", requiredFeatures: [] };
+  }
+  if (copy.financials && !copy.budget) {
+    copy.budget = {
+      bidCeilingUsd: copy.financials.bid_ceiling ?? copy.financials.bidCeilingUsd ?? 0.06,
+      currency: copy.financials.currency || "USD",
+      settlementRail: copy.financials.settlementRail || "PAYPAL_PAYOUTS"
+    };
+  } else if (copy.budget) {
+    const b = { ...copy.budget };
+    if (b.bid_ceiling && !b.bidCeilingUsd) b.bidCeilingUsd = b.bid_ceiling;
+    copy.budget = b;
+  }
+  return copy;
+}, z.object({
   rfpId: z.string().min(1),
   buyerId: z.string().min(1),
   capability: CapabilityTypeEnum,
@@ -75,9 +117,9 @@ export const RFPRequestSchema = z.object({
     requireSha256: z.boolean().default(true),
     requiredKeys: z.array(z.string()).optional(),
     semanticCheckPrompt: z.string().optional()
-  }),
+  }).default({ requireSha256: true }),
   createdAt: z.string().datetime().default(() => new Date().toISOString())
-});
+}));
 export type RFPRequest = z.infer<typeof RFPRequestSchema>;
 
 /**

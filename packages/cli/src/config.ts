@@ -24,9 +24,14 @@ export type BountyConfig = z.infer<typeof BountyConfigSchema>;
 export const DEFAULT_CONFIG_FILE = "bounty.config.json";
 
 export function loadConfig(customPath?: string): BountyConfig | null {
-  const filePath = resolve(process.cwd(), customPath ?? DEFAULT_CONFIG_FILE);
+  let filePath = resolve(process.cwd(), customPath ?? DEFAULT_CONFIG_FILE);
   if (!existsSync(filePath)) {
-    return null;
+    const parentRoot = resolve(process.cwd(), "..", "..", customPath ?? DEFAULT_CONFIG_FILE);
+    if (existsSync(parentRoot)) {
+      filePath = parentRoot;
+    } else {
+      return null;
+    }
   }
 
   try {

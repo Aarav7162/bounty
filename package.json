@@ -7,12 +7,18 @@
     "packages/*"
   ],
   "scripts": {
+    "start": "tsx scripts/start-all.ts",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present",
     "cli": "npm run dev --workspace=@bounty/cli",
+    "bounty": "tsx packages/cli/src/index.ts",
     "broker": "npm run dev --workspace=@bounty/broker",
-    "dashboard": "npm run dev --workspace=@bounty/dashboard"
+    "dashboard": "npm run dev --workspace=@bounty/dashboard",
+    "demo:cloudflare": "tsx examples/01-cloudflare-bypass/run.ts"
+  },
+  "bin": {
+    "bounty": "./packages/cli/dist/index.js"
   },
   "keywords": [
     "paypal",

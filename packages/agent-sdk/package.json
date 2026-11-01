@@ -1,0 +1,30 @@
+{
+  "name": "@bounty/agent-sdk",
+  "version": "1.0.0",
+  "description": "Bounty Agent SDK: Struggle Envelope and Autonomous Subcontracting for AI Agents",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@bounty/protocol": "*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.2"
+  }
+}
+

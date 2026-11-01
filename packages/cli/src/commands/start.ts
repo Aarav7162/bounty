@@ -18,7 +18,10 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
     saveConfig(config);
   }
 
-  const brokerUrl = options.broker ?? config.brokerUrl ?? (process.env.BOUNTY_BROKER_URL || "ws://localhost:4000/ws/seller");
+  let brokerUrl = options.broker ?? config.brokerUrl ?? (process.env.BOUNTY_BROKER_URL || "ws://localhost:4000/ws/seller");
+  if (!brokerUrl.includes("/ws/")) {
+    brokerUrl = brokerUrl.replace(/\/$/, "") + "/ws/seller";
+  }
   const sandbox = new ExecutionSandbox();
   const tui = new BountyTUI(config, brokerUrl);
 
