@@ -1,36 +1,43 @@
 import chalk from "chalk";
 import * as p from "@clack/prompts";
 import { getActiveProfile, updateActiveProfile, loadProfileConfig, saveProfileConfig, getProfilePath } from "../profile.js";
+import { fitString } from "../ui/layout.js";
 
 export function displayProfileCard(): void {
   const { name: profileKey, profile } = getActiveProfile();
 
   console.log("");
-  console.log(chalk.cyan.bold("  ╭────────────────────────────────────────────────────────────────────────╮"));
-  console.log(chalk.cyan.bold("  │") + chalk.white.bold(`  BOUNTY OPERATOR PROFILE · ${profileKey} (Active)`).padEnd(80) + chalk.cyan.bold("│"));
-  console.log(chalk.cyan.bold("  ├────────────────────────────────────────────────────────────────────────┤"));
-  console.log(chalk.cyan.bold("  │") + `  Name:             ${chalk.white.bold(profile.name)}`.padEnd(80) + chalk.cyan.bold("│"));
-  console.log(chalk.cyan.bold("  │") + `  PayPal Account:   ${chalk.yellow.bold(profile.email)}`.padEnd(80) + chalk.cyan.bold("│"));
-  console.log(chalk.cyan.bold("  │") + `  Node ID:          ${chalk.cyan(profile.seller.nodeId)}`.padEnd(80) + chalk.cyan.bold("│"));
-  console.log(chalk.cyan.bold("  │") + `  Broker Hub:       ${chalk.gray(profile.seller.brokerUrl)}`.padEnd(80) + chalk.cyan.bold("│"));
-  console.log(chalk.cyan.bold("  ├────────────────────────────────────────────────────────────────────────┤"));
-  console.log(chalk.cyan.bold("  │") + chalk.white.bold("  LIFETIME NETWORK BALANCE:").padEnd(80) + chalk.cyan.bold("│"));
-  console.log(chalk.cyan.bold("  │") + `    Seller Earned:  ${chalk.green.bold(`$${profile.stats.lifetimeEarnedUsd.toFixed(2)} USD`)}  (${profile.stats.tasksSold} jobs sold)`.padEnd(80) + chalk.cyan.bold("│"));
-  console.log(chalk.cyan.bold("  │") + `    Buyer Spent:    ${chalk.magenta.bold(`$${profile.stats.lifetimeSpentUsd.toFixed(2)} USD`)}  (${profile.stats.tasksBought} bounties bought)`.padEnd(80) + chalk.cyan.bold("│"));
-  console.log(chalk.cyan.bold("  ├────────────────────────────────────────────────────────────────────────┤"));
-  console.log(chalk.cyan.bold("  │") + chalk.white.bold("  SELLER CAPABILITIES & FLOOR PRICES:").padEnd(80) + chalk.cyan.bold("│"));
+  console.log(chalk.white.bold(`  Bounty Operator Profile · ${profileKey}`) + chalk.gray(" (active)"));
+  console.log(chalk.gray("  " + "─".repeat(64)));
+  console.log(`  ${chalk.gray(fitString("Name", 22))} ${chalk.white.bold(profile.name)}`);
+  console.log(`  ${chalk.gray(fitString("PayPal Account", 22))} ${chalk.yellow(profile.email)}`);
+  console.log(`  ${chalk.gray(fitString("Node ID", 22))} ${chalk.cyan(profile.seller.nodeId)}`);
+  console.log(`  ${chalk.gray(fitString("Broker Hub", 22))} ${chalk.gray(profile.seller.brokerUrl)}`);
+  
+  console.log("");
+  console.log(chalk.white.bold("  Network Balance"));
+  console.log(chalk.gray("  " + "─".repeat(64)));
+  console.log(`  ${chalk.gray(fitString("Seller Earned", 22))} ${chalk.green.bold(`$${profile.stats.lifetimeEarnedUsd.toFixed(2)} USD`)} ${chalk.gray(`(${profile.stats.tasksSold} jobs sold)`)}`);
+  console.log(`  ${chalk.gray(fitString("Buyer Spent", 22))} ${chalk.magenta.bold(`$${profile.stats.lifetimeSpentUsd.toFixed(2)} USD`)} ${chalk.gray(`(${profile.stats.tasksBought} bounties bought)`)}`);
+
+  console.log("");
+  console.log(chalk.white.bold("  Configured Capabilities & Floor Prices"));
+  console.log(chalk.gray("  " + "─".repeat(64)));
 
   for (const [capName, details] of Object.entries(profile.seller.capabilities)) {
-    const statusDot = details.enabled ? chalk.green("●") : chalk.red("○");
-    const statusText = details.enabled ? chalk.green("ACTIVE") : chalk.gray("DISABLED");
-    const line = `    ${statusDot} ${capName.padEnd(20)} Floor: ${chalk.yellow(`$${details.floorPriceUsd.toFixed(2)} USD`)}   Max: ${details.maxConcurrency}   ${statusText}`;
-    console.log(chalk.cyan.bold("  │") + line.padEnd(80) + chalk.cyan.bold("│"));
+    const statusText = details.enabled ? chalk.green("active") : chalk.gray("disabled");
+    const nameCol = fitString(capName, 20);
+    const floorCol = fitString(`$${details.floorPriceUsd.toFixed(2)} USD`, 14);
+    const concCol = fitString(`concurrency: ${details.maxConcurrency}`, 18);
+    console.log(`  ${chalk.cyan(nameCol)} ${chalk.yellow(floorCol)} ${chalk.gray(concCol)} ${statusText}`);
   }
 
-  console.log(chalk.cyan.bold("  ├────────────────────────────────────────────────────────────────────────┤"));
-  console.log(chalk.cyan.bold("  │") + chalk.white.bold("  BUYER DELEGATION DEFAULTS:").padEnd(80) + chalk.cyan.bold("│"));
-  console.log(chalk.cyan.bold("  │") + `    Default Max Bid: ${chalk.yellow(`$${profile.buyer.defaultBidCeilingUsd.toFixed(2)} USD`)}   Timeout: ${profile.buyer.defaultTimeoutMs}ms`.padEnd(80) + chalk.cyan.bold("│"));
-  console.log(chalk.cyan.bold("  ╰────────────────────────────────────────────────────────────────────────╯"));
+  console.log("");
+  console.log(chalk.white.bold("  Buyer Delegation Defaults"));
+  console.log(chalk.gray("  " + "─".repeat(64)));
+  console.log(`  ${chalk.gray(fitString("Default Max Bid", 22))} ${chalk.yellow(`$${profile.buyer.defaultBidCeilingUsd.toFixed(2)} USD`)}`);
+  console.log(`  ${chalk.gray(fitString("Default Timeout", 22))} ${chalk.white(`${profile.buyer.defaultTimeoutMs}ms`)}`);
+  console.log(chalk.gray("  " + "─".repeat(64)));
   console.log(chalk.gray(`  Profile stored at: ${getProfilePath()}`));
   console.log("");
 }
@@ -101,7 +108,7 @@ export async function runProfileWizard(): Promise<void> {
   const email = await p.text({
     message: "PayPal sandbox receiving email address:",
     initialValue: profile.email,
-    validate: (val) => (!val || !val.includes("@") ? "Please enter a valid email" : undefined)
+    validate: (val?: string) => (!val || !val.includes("@") ? "Please enter a valid email" : undefined)
   });
   if (p.isCancel(email)) return;
 

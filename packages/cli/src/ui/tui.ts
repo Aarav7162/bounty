@@ -1,7 +1,9 @@
 import logUpdate from "log-update";
 import cliSpinners from "cli-spinners";
 import chalk from "chalk";
+import readline from "node:readline";
 import { BountyConfig } from "../config.js";
+import { fitString } from "./layout.js";
 
 export interface LogItem {
   icon: string;
@@ -32,6 +34,7 @@ export class BountyTUI {
   private onQuitCallback?: () => void;
   private onPauseCallback?: (paused: boolean) => void;
   private onCapabilitiesCallback?: () => void;
+  private rl: readline.Interface | null = null;
 
   constructor(config: BountyConfig, brokerUrl: string) {
     this.state = {
@@ -47,7 +50,7 @@ export class BountyTUI {
 
   public setOnQuit(cb: () => void): void {
     this.onQuitCallback = cb;
-    this.setupKeypress();
+    this.setupCommands();
   }
 
   public setOnPause(cb: (paused: boolean) => void): void {
@@ -58,27 +61,51 @@ export class BountyTUI {
     this.onCapabilitiesCallback = cb;
   }
 
-  private setupKeypress(): void {
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(true);
-      process.stdin.resume();
-      process.stdin.setEncoding("utf8");
+  private setupCommands(): void {
+    if (process.stdin.isTTY && !this.rl) {
+      this.rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        prompt: chalk.cyan("bounty(seller) > ")
+      });
 
-      process.stdin.on("data", (chunk: string) => {
-        if (chunk === "q" || chunk === "Q" || chunk === "\u0003") {
-          this.onQuitCallback?.();
-        } else if (chunk === "p" || chunk === "P") {
-          const nextPaused = this.state.status !== "PAUSED";
-          this.state.status = nextPaused ? "PAUSED" : "ONLINE";
-          this.onPauseCallback?.(nextPaused);
-          this.addEvent(
-            nextPaused ? chalk.yellow("❚❚") : chalk.green("✓"),
-            nextPaused ? "Worker bidding paused" : "Worker bidding resumed"
-          );
-          this.render();
-        } else if (chunk === "c" || chunk === "C") {
-          this.onCapabilitiesCallback?.();
+      this.rl.on("line", (line) => {
+        const cmd = line.trim().toLowerCase();
+        if (!cmd) {
+          this.rl?.prompt();
+          return;
         }
+
+        if (cmd === "exit" || cmd === "quit" || cmd === "q") {
+          this.onQuitCallback?.();
+        } else if (cmd === "pause" || cmd === "p") {
+          this.state.status = "PAUSED";
+          this.onPauseCallback?.(true);
+          this.addEvent(chalk.yellow("❚❚"), "Worker bidding paused");
+        } else if (cmd === "resume" || cmd === "r") {
+          this.state.status = "ONLINE";
+          this.onPauseCallback?.(false);
+          this.addEvent(chalk.green("●"), "Worker bidding resumed");
+        } else if (cmd === "balance" || cmd === "b") {
+          this.addEvent(chalk.yellow("$"), `Lifetime Earned: $${this.state.lifetimeEarnedUsd.toFixed(2)} USD`);
+        } else if (cmd === "caps" || cmd === "capabilities" || cmd === "c") {
+          const capList = Object.entries(this.state.config.capabilities)
+            .map(([k, v]) => `${k} ($${v.floorPriceUsd.toFixed(2)})`)
+            .join(", ");
+          this.addEvent(chalk.cyan("⚙"), `Capabilities: ${capList}`);
+        } else if (cmd === "stats" || cmd === "s") {
+          this.addEvent(chalk.cyan("ℹ"), `Jobs: ${this.state.jobsCompleted} · Active Nodes: ${this.state.nodesOnline}`);
+        } else if (cmd === "clear") {
+          this.state.jobEvents = [];
+          this.render();
+        } else if (cmd === "help" || cmd === "?") {
+          this.addEvent(chalk.gray("Commands: pause | resume | balance | caps | stats | clear | exit"), "");
+        } else {
+          this.addEvent(chalk.yellow("!"), `Unknown command: ${cmd} (type help for list)`);
+        }
+
+        this.render();
+        this.rl?.prompt();
       });
     }
   }
@@ -100,7 +127,7 @@ export class BountyTUI {
 
   public addEvent(icon: string, text: string, detail?: string, color?: (str: string) => string): void {
     this.state.jobEvents.push({ icon, text, detail, color });
-    if (this.state.jobEvents.length > 12) {
+    if (this.state.jobEvents.length > 10) {
       this.state.jobEvents.shift();
     }
     this.render();
@@ -119,8 +146,11 @@ export class BountyTUI {
     this.renderTimer = setInterval(() => {
       this.spinnerIndex = (this.spinnerIndex + 1) % spinner.frames.length;
       this.render();
-    }, 80);
+    }, 200);
     this.render();
+    if (this.rl) {
+      this.rl.prompt();
+    }
   }
 
   public stop(): void {
@@ -128,13 +158,11 @@ export class BountyTUI {
       clearInterval(this.renderTimer);
       this.renderTimer = null;
     }
-    logUpdate.done();
-    if (process.stdin.isTTY) {
-      try {
-        process.stdin.setRawMode(false);
-        process.stdin.pause();
-      } catch {}
+    if (this.rl) {
+      this.rl.close();
+      this.rl = null;
     }
+    logUpdate.done();
   }
 
   private render(): void {
@@ -150,7 +178,7 @@ export class BountyTUI {
     if (status === "DISCONNECTED") statusPill = chalk.bgHex("#7f1d1d").hex("#fca5a5").bold(" ✕ DISCONNECTED ");
 
     const leftColWidth = 52;
-    const rightColWidth = 34;
+    const rightColWidth = 36;
 
     const leftLines: string[] = [];
     const rightLines: string[] = [];
@@ -173,46 +201,49 @@ export class BountyTUI {
       const icon = activeStep.spinner ? chalk.cyan(spinner) : chalk.cyan("›");
       leftLines.push(`  ${icon}  ${chalk.white(activeStep.text)}`);
     } else if (status === "ONLINE") {
-      leftLines.push(`  ${chalk.cyan(spinner)}  ${chalk.gray("Waiting for tasks...")}`);
+      leftLines.push(`  ${chalk.cyan(spinner)}  ${chalk.gray("Waiting for tasks on orderbook...")}`);
     }
 
     // Right Column Content: Earnings Ticker & Node HUD
     rightLines.push(chalk.gray("EARNINGS TICKER"));
     rightLines.push(chalk.gray("─".repeat(rightColWidth)));
-    rightLines.push(`  ${chalk.gray("Lifetime Earned:")} ${chalk.yellow.bold(`$${lifetimeEarnedUsd.toFixed(2)} USD`)}`);
-    rightLines.push(`  ${chalk.gray("Jobs Completed:")}  ${chalk.white.bold(String(jobsCompleted))}`);
-    rightLines.push(`  ${chalk.gray("Nodes Online:")}    ${chalk.cyan.bold(String(nodesOnline))}`);
-    rightLines.push(`  ${chalk.gray("PayPal Account:")}  ${chalk.yellow(config.payoutDestination.value.slice(0, 16) + "...")}`);
+    rightLines.push(`  ${chalk.gray(fitString("Lifetime Earned:", 18))} ${chalk.yellow.bold(`$${lifetimeEarnedUsd.toFixed(2)} USD`)}`);
+    rightLines.push(`  ${chalk.gray(fitString("Jobs Completed:", 18))} ${chalk.white.bold(String(jobsCompleted))}`);
+    rightLines.push(`  ${chalk.gray(fitString("Nodes Online:", 18))} ${chalk.cyan.bold(String(nodesOnline))}`);
+    rightLines.push(`  ${chalk.gray(fitString("PayPal Account:", 18))} ${chalk.yellow(config.payoutDestination.value.slice(0, 16) + "...")}`);
     if (lastPayoutBatchId) {
-      rightLines.push(`  ${chalk.gray("Latest Batch:")}    ${chalk.hex("#38bdf8")(lastPayoutBatchId.slice(0, 14))}`);
+      rightLines.push(`  ${chalk.gray(fitString("Latest Batch:", 18))} ${chalk.hex("#38bdf8")(lastPayoutBatchId.slice(0, 14))}`);
     }
     rightLines.push(chalk.gray("─".repeat(rightColWidth)));
     const caps = Object.keys(config.capabilities).join(", ");
-    rightLines.push(`  ${chalk.gray("Capabilities:")}   ${chalk.green(caps.length > 20 ? caps.slice(0, 20) + "..." : caps)}`);
+    rightLines.push(`  ${chalk.gray(fitString("Capabilities:", 18))} ${chalk.green(caps.length > 16 ? caps.slice(0, 16) + "..." : caps)}`);
 
-    // Merge into Split View
+    // Merge into Split View with STRICT fixed-width alignment
     const maxRows = Math.max(leftLines.length, rightLines.length, 9);
     const combinedRows: string[] = [];
 
     for (let i = 0; i < maxRows; i++) {
       const left = leftLines[i] || "";
       const right = rightLines[i] || "";
-      // Strip ANSI length for padding
-      const leftPlain = left.replace(/\u001b\[[0-9;]*m/g, "");
-      const padding = " ".repeat(Math.max(0, leftColWidth - leftPlain.length));
-      combinedRows.push(`  ${left}${padding}  ${chalk.gray("│")}  ${right}`);
+      const leftFormatted = fitString(left, leftColWidth);
+      const rightFormatted = fitString(right, rightColWidth);
+      combinedRows.push(`  ${leftFormatted}  ${chalk.gray("│")}  ${rightFormatted}`);
     }
 
+    const totalWidth = leftColWidth + rightColWidth + 7;
     const output = [
       "",
       `  ${brand} ${ver}       ${statusPill}        ${chalk.gray("Broker:")} ${chalk.cyan(brokerUrl)}`,
-      `  ${chalk.gray("─".repeat(leftColWidth + rightColWidth + 7))}`,
+      `  ${chalk.gray("─".repeat(totalWidth))}`,
       ...combinedRows,
-      `  ${chalk.gray("─".repeat(leftColWidth + rightColWidth + 7))}`,
-      `  ${chalk.gray("Keystrokes:")} ${chalk.cyan("[p]")} ${chalk.gray("pause/resume")}  ·  ${chalk.cyan("[c]")} ${chalk.gray("capabilities")}  ·  ${chalk.cyan("[q]")} ${chalk.gray("quit")}`,
+      `  ${chalk.gray("─".repeat(totalWidth))}`,
+      `  ${chalk.gray("Commands:")} ${chalk.cyan("pause")}  ·  ${chalk.cyan("resume")}  ·  ${chalk.cyan("balance")}  ·  ${chalk.cyan("caps")}  ·  ${chalk.cyan("stats")}  ·  ${chalk.cyan("help")}  ·  ${chalk.cyan("exit")}`,
       ""
     ];
 
     logUpdate(output.join("\n"));
+    if (this.rl) {
+      this.rl.prompt(true);
+    }
   }
 }

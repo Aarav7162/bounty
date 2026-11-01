@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { fitString } from "../ui/layout.js";
 
 export interface NodesOptions {
   broker?: string;
@@ -23,39 +24,42 @@ export async function runNodesCommand(options: NodesOptions): Promise<void> {
     }
 
     console.log("");
-    console.log(chalk.cyan.bold("  ╭────────────────────────────────────────────────────────────────────────────────────────╮"));
-    console.log(chalk.cyan.bold("  │") + chalk.white.bold("  BOUNTY ACTIVE ORDERBOOK NODES (Live Seller Mesh)").padEnd(90) + chalk.cyan.bold("│"));
-    console.log(chalk.cyan.bold("  ├─────────────────┬──────────┬──────────────┬──────────────┬─────────────────────────────┤"));
-    console.log(chalk.cyan.bold("  │") + chalk.gray(" NODE ID         ") + chalk.cyan("│") + chalk.gray(" STATUS   ") + chalk.cyan("│") + chalk.gray(" JOBS DONE    ") + chalk.cyan("│") + chalk.gray(" EARNED ($)   ") + chalk.cyan("│") + chalk.gray(" CAPABILITIES (FLOOR)        ") + chalk.cyan.bold("│"));
-    console.log(chalk.cyan.bold("  ├─────────────────┼──────────┼──────────────┼──────────────┼─────────────────────────────┤"));
+    console.log(chalk.white.bold("  Bounty Active Orderbook Nodes") + chalk.gray(` · ${nodes.length} online · Broker: ${apiBase}`));
+    console.log(chalk.gray("  " + "─".repeat(84)));
+
+    const colNode = fitString("NODE ID", 20);
+    const colStatus = fitString("STATUS", 12);
+    const colJobs = fitString("COMPLETED", 14);
+    const colEarned = fitString("EARNED", 14);
+    const colCaps = fitString("CAPABILITIES (FLOOR)", 24);
+
+    console.log(`  ${chalk.gray(colNode)} ${chalk.gray(colStatus)} ${chalk.gray(colJobs)} ${chalk.gray(colEarned)} ${chalk.gray(colCaps)}`);
+    console.log(chalk.gray("  " + "─".repeat(84)));
 
     if (nodes.length === 0) {
-      console.log(chalk.cyan.bold("  │") + chalk.yellow("  No seller nodes currently online. Start a worker with: bounty sell                      ").padEnd(90) + chalk.cyan.bold("│"));
+      console.log(chalk.yellow("  No seller nodes currently online. Start a worker with: bounty sell"));
     } else {
       for (const node of nodes) {
-        const nodeId = node.nodeId.length > 15 ? `${node.nodeId.slice(0, 13)}..` : node.nodeId;
-        const status = node.isAlive ? chalk.green.bold("ONLINE ") : chalk.red.bold("OFFLINE");
-        const jobs = `${node.tasksCompleted ?? 0} jobs`;
-        const earned = `$${Number(node.totalEarnedUsd || 0).toFixed(2)}`;
+        const nodeId = fitString(node.nodeId.length > 18 ? `${node.nodeId.slice(0, 16)}..` : node.nodeId, 20);
+        const statusStr = node.isAlive ? chalk.green("ONLINE") : chalk.red("OFFLINE");
+        const status = fitString(statusStr, 12);
+        const jobs = fitString(`${node.tasksCompleted ?? 0} jobs`, 14);
+        const earned = fitString(`$${Number(node.totalEarnedUsd || 0).toFixed(2)} USD`, 14);
 
         const caps = (node.capabilities || [])
           .map((c: any) => `${c.capability} ($${c.floorPriceUsd})`)
-          .slice(0, 2)
           .join(", ");
-        const capsDisplay = caps.length > 27 ? `${caps.slice(0, 25)}..` : caps;
+        const capsDisplay = fitString(caps.length > 24 ? `${caps.slice(0, 22)}..` : caps, 24);
 
-        const line = `  ${chalk.cyan(nodeId).padEnd(24)}│ ${status.padEnd(16)}│ ${jobs.padEnd(13)}│ ${chalk.yellow(earned).padEnd(20)}│ ${capsDisplay.padEnd(28)}`;
-        console.log(chalk.cyan.bold("  │") + line + chalk.cyan.bold("│"));
+        console.log(`  ${chalk.cyan(nodeId)} ${status} ${chalk.white(jobs)} ${chalk.yellow(earned)} ${chalk.gray(capsDisplay)}`);
       }
     }
 
-    console.log(chalk.cyan.bold("  ├────────────────────────────────────────────────────────────────────────────────────────┤"));
-    console.log(chalk.cyan.bold("  │") + `  Total Active Nodes: ${chalk.green.bold(nodes.length)}  ·  Broker: ${chalk.gray(apiBase)}`.padEnd(90) + chalk.cyan.bold("│"));
-    console.log(chalk.cyan.bold("  ╰────────────────────────────────────────────────────────────────────────────────────────╯"));
+    console.log(chalk.gray("  " + "─".repeat(84)));
+    console.log(`  ${chalk.gray("Nodes Active:")} ${chalk.green.bold(nodes.length)}  ${chalk.gray("·")}  ${chalk.gray("Orderbook:")} ${chalk.cyan(apiBase)}`);
     console.log("");
   } catch (err: any) {
-    console.error(chalk.red(`\n✕ Could not reach Bounty Broker at ${apiBase}/api/nodes`));
-    console.error(chalk.yellow(`  Start the broker in another terminal using: bounty server\n`));
+    console.error(chalk.red(`\n  ✕ Could not reach Bounty Broker at ${apiBase}/api/nodes`));
+    console.error(chalk.yellow(`    Start the broker in another terminal using: bounty server\n`));
   }
 }
-

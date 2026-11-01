@@ -192,6 +192,9 @@ export class MatchingEngine extends EventEmitter {
     const candidates: Array<{ node: ConnectedSellerNode; floorPrice: number; avgLatency: number }> = [];
 
     for (const node of this.nodes.values()) {
+      if (!node.socket || node.socket.readyState !== (node.socket.OPEN ?? 1)) {
+        continue;
+      }
       const capConfig = node.capabilities.get(rfp.capability);
       if (!capConfig) continue;
 
@@ -260,6 +263,14 @@ export class MatchingEngine extends EventEmitter {
       assignment
     };
     this.sendToNode(winner.node, dispatchMsg);
+
+    // Watchdog: If node does not return result within 10 seconds, evict unresponsive node
+    setTimeout(() => {
+      const taskState = this.tasks.get(rfp.rfpId);
+      if (taskState && !taskState.result) {
+        this.evictNode(winner.node.nodeId, "TASK_EXECUTION_TIMEOUT");
+      }
+    }, 10000);
 
     this.emitTelemetry("TASK_ASSIGNED", {
       taskId,

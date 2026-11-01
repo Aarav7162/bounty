@@ -10,7 +10,7 @@ import { displayProfileCard, handleProfileSet, runProfileWizard } from "./comman
 import { runBuyScrapeCommand, runBuyOcrCommand, runBuyWizard } from "./commands/buy.js";
 import { runLedgerCommand } from "./commands/ledger.js";
 import { runNodesCommand } from "./commands/nodes.js";
-import { runRootMenu } from "./commands/menu.js";
+import { runInteractiveShell } from "./commands/shell.js";
 
 // Load environment variables
 dotenv.config({ path: resolve(process.cwd(), "../../.env") });
@@ -148,17 +148,10 @@ program
   });
 
 if (!process.argv.slice(2).length) {
-  if (process.stdin.isTTY) {
-    runRootMenu().catch((err) => {
-      console.error(err);
-      process.exit(1);
-    });
-  } else {
-    runStartCommand({}).catch((err) => {
-      console.error(err);
-      process.exit(1);
-    });
-  }
+  runInteractiveShell().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 } else {
   program.parse(process.argv);
 }

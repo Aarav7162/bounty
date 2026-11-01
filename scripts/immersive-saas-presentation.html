@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Bounty — Immersive SaaS Launch Demo</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: #05070c;
+      color: #f1f5f9;
+      font-family: 'Inter', -apple-system, sans-serif;
+      width: 1280px;
+      height: 720px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Ambient Animated Mesh Background */
+    .bg-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(2, 132, 199, 0.18) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.18) 0%, transparent 50%),
+        radial-gradient(circle at 50% 80%, rgba(234, 179, 8, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.15) 0%, transparent 50%);
+      z-index: 1;
+    }
+
+    .grid-pattern {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: 2;
+      mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+    }
+
+    /* Dynamic 3D Camera Stage */
+    .stage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1280px;
+      height: 720px;
+      perspective: 1200px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .camera {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Floating SaaS UI Window Cards */
+    .glass-window {
+      background: rgba(13, 18, 30, 0.88);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      box-shadow: 
+        0 30px 70px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        0 0 40px rgba(14, 165, 233, 0.15);
+      position: absolute;
+      overflow: hidden;
+      transform-style: preserve-3d;
+      transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .window-header {
+      height: 38px;
+      background: rgba(20, 27, 45, 0.95);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-size: 11px;
+      color: #94a3b8;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .traffic-lights {
+      display: flex;
+      gap: 7px;
+      margin-right: 14px;
+    }
+
+    .traffic-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+    .td-red { background: #ff5f56; }
+    .td-yellow { background: #ffbd2e; }
+    .td-green { background: #27c93f; }
+
+    .window-body {
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      line-height: 1.5;
+    }
+
+    /* Scene Positions */
+    /* 1. Intro Overlay */
+    #scene-intro {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 50;
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    .intro-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 18px;
+      background: rgba(2, 132, 199, 0.15);
+      border: 1px solid rgba(14, 165, 233, 0.4);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #38bdf8;
+      margin-bottom: 20px;
+      box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .intro-title {
+      font-size: 68px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      background: linear-gradient(135deg, #ffffff 0%, #bae6fd 50%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 14px;
+      filter: drop-shadow(0 0 35px rgba(56, 189, 248, 0.4));
+    }
+
+    .intro-sub {
+      font-size: 21px;
+      color: #94a3b8;
+      font-weight: 400;
+      max-width: 680px;
+      line-height: 1.4;
+      margin-bottom: 28px;
+    }
+
+    .intro-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #cbd5e1;
+      padding: 6px 14px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+    }
+
+    /* 2. Side-by-Side Dual Terminals */
+    #window-buyer {
+      width: 580px;
+      height: 580px;
+      left: 45px;
+      top: 70px;
+      transform: translateZ(0) rotateY(4deg);
+    }
+
+    #window-seller {
+      width: 580px;
+      height: 580px;
+      right: 45px;
+      top: 70px;
+      transform: translateZ(0) rotateY(-4deg);
+    }
+
+    /* 3. AG Grid Dashboard Floating Window */
+    #window-dashboard {
+      width: 1160px;
+      height: 600px;
+      left: 60px;
+      top: 60px;
+      transform: translateZ(-800px) scale(0.6);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Glow highlights */
+    .glow-box-roadblock {
+      border: 1.5px solid #f43f5e !important;
+      background: rgba(244, 63, 94, 0.08) !important;
+      box-shadow: 0 0 25px rgba(244, 63, 94, 0.3) !important;
+    }
+
+    .glow-box-payout {
+      border: 1.5px solid #10b981 !important;
+      background: rgba(16, 185, 129, 0.08) !important;
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.35) !important;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      opacity: 0;
+      transform: translateX(-10px);
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .step-item.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* Colors */
+    .c-cyan { color: #38bdf8; }
+    .c-green { color: #4ade80; font-weight: 600; }
+    .c-yellow { color: #facc15; font-weight: 600; }
+    .c-rose { color: #fb7185; font-weight: 600; }
+    .c-gray { color: #64748b; }
+    .c-white { color: #f8fafc; font-weight: 600; }
+    .c-purple { color: #c084fc; font-weight: 600; }
+
+    /* Kinetic Zoom HUD Overlays */
+    .hud-label {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 24px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(56, 189, 248, 0.2);
+      z-index: 100;
+      letter-spacing: 0.5px;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    .hud-label.active { opacity: 1; }
+    .hud-dot { width: 8px; height: 8px; border-radius: 50%; background: #38bdf8; animation: pulseDot 1s infinite; }
+    @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.3); } }
+
+    /* Outro Scene */
+    #scene-outro {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 60;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-canvas"></div>
+  <div class="grid-pattern"></div>
+
+  <!-- HUD Status Bar -->
+  <div class="hud-label" id="hud">
+    <div class="hud-dot"></div>
+    <span id="hud-text">AUTONOMOUS DELEGATION MESH</span>
+  </div>
+
+  <div class="stage">
+    <div class="camera" id="camera">
+
+      <!-- SCENE 1: CINEMATIC INTRO HERO -->
+      <div id="scene-intro">
+        <div class="intro-badge">PayPal AI Hackathon 2026 · Agentic Commerce</div>
+        <h1 class="intro-title">Bounty</h1>
+        <p class="intro-sub">
+          Autonomous Machine-to-Machine Subcontracting &amp; Real-Time Liquidity over PayPal Sandbox Rails
+        </p>
+        <div class="intro-pill">
+          SHA-256 Verifiable Proofs · Developer Split-View CLI · AG Grid Telemetry
+        </div>
+      </div>
+
+      <!-- SCENE 2: BUYER AGENT TERMINAL -->
+      <div class="glass-window" id="window-buyer">
+        <div class="window-header">
+          <div class="traffic-lights">
+            <div class="traffic-dot td-red"></div>
+            <div class="traffic-dot td-yellow"></div>
+            <div class="traffic-dot td-green"></div>
+          </div>
+          <span style="color: #38bdf8; font-weight: 600;">buyer-agent-alpha</span>&nbsp;—&nbsp;<span>bounty buy scrape</span>
+        </div>
+        <div class="window-body">
+          <div style="color: #64748b; margin-bottom: 8px;">// Autonomous Execution Agent</div>
+          <div><span class="c-cyan">PS &gt;</span> <span class="c-white" id="b-prompt">bounty buy scrape http://localhost:5000/protected --bypass cloudflare_turnstile</span></div>
+
+          <div id="b-card" style="margin-top: 14px; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px; background: rgba(14, 165, 233, 0.04);">
+            <div style="font-weight: 700; color: #38bdf8; margin-bottom: 10px; font-size: 12px; display: flex; justify-content: space-between;">
+              <span>╭── BOUNTY BUYER DELEGATION</span>
+              <span class="c-gray">RFP: rfp_mvxyfeai_de22</span>
+            </div>
+
+            <div class="step-item" id="b-s1">
+              <span class="c-rose" style="font-size: 13px;">✕</span>
+              <span>1. Roadblock Trapped</span>
+              <span class="c-yellow" style="margin-left: auto;">[HTTP 403 · cf-turnstile]</span>
+            </div>
+
+            <div class="step-item" id="b-s2">
+              <span class="c-cyan" style="font-size: 13px;">➜</span>
+              <span>2. RFP Broadcasted</span>
+              <span class="c-gray" style="margin-left: auto;">[web_scrape · Max: $0.06]</span>
+            </div>
+
+            <div class="step-item" id="b-s3">
+              <span class="c-green" style="font-size: 13px;">✔</span>
+              <span>3. Orderbook Matched</span>
+              <span class="c-cyan" style="margin-left: auto;">[node_mumbai_01 · $0.05]</span>
+            </div>
+
+            <div class="step-item" id="b-s4">
+              <span class="c-green" style="font-size: 13px;">✔</span>
+              <span>4. Execution Sandbox</span>
+              <span class="c-gray" style="margin-left: auto;">[517 bytes · SHA-256 Valid]</span>
+            </div>
+
+            <div class="step-item" id="b-s5">
+              <span class="c-green" style="font-size: 13px;">✔</span>
+              <span style="font-weight: 700; color: #f8fafc;">5. PayPal Settlement</span>
+              <span class="c-yellow" style="margin-left: auto; font-weight: 700;">[Batch: VH7GM2N22RB9G]</span>
+            </div>
+
+            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 10px; color: #94a3b8; display: flex; justify-content: space-between;">
+              <span>Latency: <strong style="color: #4ade80;">2.63s</strong></span>
+              <span>Settlement: <strong style="color: #facc15;">$0.05 USD</strong></span>
+              <span>Rails: <strong>PayPal Sandbox</strong></span>
+            </div>
+          </div>
+
+          <div id="b-payload" style="margin-top: 12px; display: none; opacity: 0; transition: opacity 0.5s ease;">
+            <div class="c-gray" style="font-size: 10px;">[VERIFIED DELEGATED PAYLOAD RECEIVED]</div>
+            <pre style="color: #cbd5e1; font-size: 10px; margin-top: 4px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">
+{
+  "targetUrl": "http://localhost:5000/protected",
+  "httpStatus": 200,
+  "bypassed": true,
+  "items": [
+    { "symbol": "NVDA", "price": 142.85, "change": "+3.2%" },
+    { "symbol": "AAPL", "price": 231.10, "change": "+0.8%" }
+  ]
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 3: SELLER NODE SPLIT-VIEW TERMINAL -->
+      <div class="glass-window" id="window-seller">
+        <div class="window-header">
+          <div class="traffic-lights">
+            <div class="traffic-dot td-red"></div>
+            <div class="traffic-dot td-yellow"></div>
+            <div class="traffic-dot td-green"></div>
+          </div>
+          <span style="color: #4ade80; font-weight: 600;">node_mumbai_01</span>&nbsp;—&nbsp;<span>bounty sell</span>
+          <span style="margin-left: auto; color: #4ade80; font-size: 10px; display: flex; align-items: center; gap: 4px;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #4ade80;"></span> ONLINE
+          </span>
+        </div>
+        <div class="window-body" style="padding: 12px; display: flex; flex-direction: column; height: calc(100% - 38px);">
+          
+          <div style="display: flex; flex: 1; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; overflow: hidden;">
+            <!-- Left Half: Active Job Flow -->
+            <div style="flex: 1.35; padding: 12px; border-right: 1px solid rgba(255, 255, 255, 0.08); background: rgba(10, 15, 26, 0.6);">
+              <div class="c-gray" style="font-size: 10px; font-weight: 700; margin-bottom: 8px;">ACTIVE JOB FLOW</div>
+              
+              <div id="s-evt-1" style="font-size: 10.5px; margin-bottom: 6px;">
+                <span class="c-green">✓</span> Connected to broker · <span class="c-cyan">node_mumbai_01</span>
+              </div>
+              <div id="s-evt-wait" style="font-size: 10.5px; color: #94a3b8; margin-bottom: 6px;">
+                <span class="c-cyan">⠋</span> Waiting for tasks on orderbook...
+              </div>
+              <div id="s-evt-2" style="font-size: 10.5px; margin-bottom: 6px; display: none;">
+                <span class="c-cyan">➜</span> Task received: <span class="c-yellow">"web_scrape"</span> ($0.06 ceiling)
+              </div>
+              <div id="s-evt-3" style="font-size: 10.5px; margin-bottom: 6px; display: none;">
+                <span class="c-green">✓</span> Bid submitted: <span class="c-green">$0.05 USD</span>
+              </div>
+              <div id="s-evt-4" style="font-size: 10.5px; margin-bottom: 6px; display: none;">
+                <span class="c-green">✓</span> SHA-256 hash computed: <span class="c-gray">sha256:375219d6ff...</span>
+              </div>
+              <div id="s-evt-5" style="font-size: 10.5px; margin-bottom: 6px; display: none; padding: 6px; background: rgba(16, 185, 129, 0.12); border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                <span class="c-green" style="font-weight: 700;">✓ PAID · Batch: VH7GM2N22RB9G</span><br>
+                <span style="font-size: 9.5px; color: #cbd5e1;">Amount: <strong class="c-green">$0.05 USD</strong> · Status: <strong class="c-green">SUCCESS</strong></span>
+              </div>
+            </div>
+
+            <!-- Right Half: Earnings Ticker -->
+            <div style="flex: 1; padding: 12px; background: rgba(15, 23, 42, 0.7); display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div class="c-gray" style="font-size: 10px; font-weight: 700; margin-bottom: 8px;">EARNINGS TICKER</div>
+                
+                <div style="margin-bottom: 8px;">
+                  <div class="c-gray" style="font-size: 9px; text-transform: uppercase;">Lifetime Earned</div>
+                  <div id="s-ticker" style="font-size: 20px; font-weight: 800; color: #4ade80; letter-spacing: -0.5px;">$0.05 USD</div>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-bottom: 10px;">
+                  <div>
+                    <div class="c-gray" style="font-size: 9px;">Jobs Sold</div>
+                    <div id="s-jobs" style="font-size: 14px; font-weight: 700; color: #f8fafc;">1</div>
+                  </div>
+                  <div>
+                    <div class="c-gray" style="font-size: 9px;">Nodes Active</div>
+                    <div style="font-size: 14px; font-weight: 700; color: #38bdf8;">1</div>
+                  </div>
+                </div>
+
+                <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 8px;">
+                  <div class="c-gray" style="font-size: 9px; text-transform: uppercase; margin-bottom: 4px;">Configured Capabilities</div>
+                  <div style="font-size: 10px; color: #cbd5e1; line-height: 1.6;">
+                    <div>● python_code <span class="c-yellow" style="float: right;">$0.25</span></div>
+                    <div>● ocr <span class="c-yellow" style="float: right;">$0.20</span></div>
+                    <div>● web_scrape <span class="c-yellow" style="float: right;">$0.05</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="font-size: 9px; color: #64748b; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 6px;">
+                PayPal: sb-sqcdl531...
+              </div>
+            </div>
+          </div>
+
+          <div style="font-size: 10px; color: #64748b; margin-top: 8px; display: flex; justify-content: space-between;">
+            <span>Commands: pause &middot; resume &middot; balance &middot; caps &middot; stats &middot; help &middot; exit</span>
+            <span class="c-cyan">Bounty v1.0.0</span>
+          </div>
+
+          <div style="margin-top: 8px; padding: 6px 10px; background: rgba(0, 0, 0, 0.45); border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.25); font-family: 'JetBrains Mono', monospace; font-size: 11px; display: flex; align-items: center; gap: 8px;">
+            <span style="color: #38bdf8; font-weight: 700;">bounty(seller) &gt;</span>
+            <span id="s-cmd-text" style="color: #f8fafc;"></span>
+            <span style="display: inline-block; width: 7px; height: 13px; background: #38bdf8; animation: pulseDot 0.8s infinite;"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 4: AG GRID MISSION CONTROL DASHBOARD -->
+      <div class="glass-window" id="window-dashboard">
+        <div class="window-header">
+          <div class="traffic-lights">
+            <div class="traffic-dot td-red"></div>
+            <div class="traffic-dot td-yellow"></div>
+            <div class="traffic-dot td-green"></div>
+          </div>
+          <span style="color: #38bdf8; font-weight: 600;">http://localhost:5173</span>&nbsp;—&nbsp;<span>Bounty AG Grid Community v33 Telemetry Dashboard</span>
+          <span style="margin-left: auto; color: #facc15; font-size: 10px; font-weight: 600;">$5,000 AG Grid Sponsor Prize</span>
+        </div>
+        <div class="window-body" style="padding: 14px;">
+          <!-- KPI Cards Strip -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px;">
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 8px; padding: 10px;">
+              <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Total Settled (USD)</div>
+              <div style="font-size: 22px; font-weight: 800; color: #facc15; font-family: 'JetBrains Mono';">$0.55</div>
+              <div style="font-size: 10px; color: #4ade80;">PayPal Micro-Payouts</div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 10px;">
+              <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Jobs Completed</div>
+              <div style="font-size: 22px; font-weight: 800; color: #f8fafc; font-family: 'JetBrains Mono';">4</div>
+              <div style="font-size: 10px; color: #38bdf8;">100% Cryptographic SHA-256</div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(74, 222, 128, 0.3); border-radius: 8px; padding: 10px;">
+              <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Average Latency</div>
+              <div style="font-size: 22px; font-weight: 800; color: #4ade80; font-family: 'JetBrains Mono';">1,180 ms</div>
+              <div style="font-size: 10px; color: #94a3b8;">Subprocess Isolation</div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(192, 132, 252, 0.3); border-radius: 8px; padding: 10px;">
+              <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Active Nodes</div>
+              <div style="font-size: 22px; font-weight: 800; color: #c084fc; font-family: 'JetBrains Mono';">1</div>
+              <div style="font-size: 10px; color: #4ade80;">Keepalive Verified</div>
+            </div>
+          </div>
+
+          <!-- Mocked Live AG Grid Container -->
+          <div style="border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; overflow: hidden; background: #0b0f19;">
+            <!-- Grid Header Row with Grouping -->
+            <div style="display: grid; grid-template-columns: 85px 140px 120px 140px 110px 240px 140px; background: #131b2e; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 10px; font-weight: 700; color: #94a3b8;">
+              <div style="padding: 8px;">Time</div>
+              <div style="padding: 8px;">RFP ID</div>
+              <div style="padding: 8px;">Capability</div>
+              <div style="padding: 8px;">Seller Node</div>
+              <div style="padding: 8px;">Status</div>
+              <div style="padding: 8px; background: rgba(234, 179, 8, 0.15); color: #facc15; border-left: 1px solid rgba(234, 179, 8, 0.3); border-right: 1px solid rgba(234, 179, 8, 0.3); text-align: center;">
+                Financials (PayPal Rails) · Bid / Paid / Batch
+              </div>
+              <div style="padding: 8px;">Latency (ms)</div>
+            </div>
+
+            <!-- Row 1: The Latest Settlement -->
+            <div style="display: grid; grid-template-columns: 85px 140px 120px 140px 110px 240px 140px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 10.5px; align-items: center; background: rgba(16, 185, 129, 0.05);" id="dash-row-latest">
+              <div style="padding: 10px 8px; color: #94a3b8;">20:27:54</div>
+              <div style="padding: 10px 8px; color: #38bdf8;">rfp_mvxyfeai..</div>
+              <div style="padding: 10px 8px; color: #38bdf8;">web_scrape</div>
+              <div style="padding: 10px 8px; color: #cbd5e1;">node_mumbai_01</div>
+              <div style="padding: 10px 8px;">
+                <span style="background: rgba(16, 185, 129, 0.2); color: #4ade80; border: 1px solid rgba(16, 185, 129, 0.4); padding: 3px 8px; border-radius: 9999px; font-size: 9.5px; font-weight: 700;">
+                  ● SETTLED
+                </span>
+              </div>
+              <div style="padding: 10px 8px; border-left: 1px solid rgba(234, 179, 8, 0.15); border-right: 1px solid rgba(234, 179, 8, 0.15); font-size: 10px; color: #facc15; display: flex; gap: 8px; align-items: center; justify-content: center;">
+                <span>$0.06</span> &rarr; <strong style="color: #4ade80;">$0.05</strong>
+                <span style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: #38bdf8;">VH7GM2N22RB9G</span>
+              </div>
+              <div style="padding: 10px 8px; display: flex; align-items: center; gap: 6px;">
+                <div style="width: 60px; height: 5px; background: #1e293b; border-radius: 3px; overflow: hidden;">
+                  <div style="width: 65%; height: 100%; background: #4ade80;"></div>
+                </div>
+                <span style="color: #94a3b8; font-size: 10px;">2,630ms</span>
+              </div>
+            </div>
+
+            <!-- Row 2 -->
+            <div style="display: grid; grid-template-columns: 85px 140px 120px 140px 110px 240px 140px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 10.5px; align-items: center;">
+              <div style="padding: 10px 8px; color: #94a3b8;">20:27:08</div>
+              <div style="padding: 10px 8px; color: #38bdf8;">rfp_mvxye5k7..</div>
+              <div style="padding: 10px 8px; color: #38bdf8;">web_scrape</div>
+              <div style="padding: 10px 8px; color: #cbd5e1;">node_mumbai_01</div>
+              <div style="padding: 10px 8px;">
+                <span style="background: rgba(16, 185, 129, 0.2); color: #4ade80; border: 1px solid rgba(16, 185, 129, 0.4); padding: 3px 8px; border-radius: 9999px; font-size: 9.5px; font-weight: 700;">
+                  ● SETTLED
+                </span>
+              </div>
+              <div style="padding: 10px 8px; border-left: 1px solid rgba(234, 179, 8, 0.15); border-right: 1px solid rgba(234, 179, 8, 0.15); font-size: 10px; color: #facc15; display: flex; gap: 8px; align-items: center; justify-content: center;">
+                <span>$0.06</span> &rarr; <strong style="color: #4ade80;">$0.05</strong>
+                <span style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: #38bdf8;">75AWDKKVK6XF6</span>
+              </div>
+              <div style="padding: 10px 8px; display: flex; align-items: center; gap: 6px;">
+                <div style="width: 60px; height: 5px; background: #1e293b; border-radius: 3px; overflow: hidden;">
+                  <div style="width: 30%; height: 100%; background: #4ade80;"></div>
+                </div>
+                <span style="color: #94a3b8; font-size: 10px;">1,210ms</span>
+              </div>
+            </div>
+
+            <!-- Pinned Bottom Aggregation Row -->
+            <div style="display: grid; grid-template-columns: 85px 140px 120px 140px 110px 240px 140px; background: #0f172a; border-top: 2px solid rgba(56, 189, 248, 0.3); font-size: 10.5px; font-weight: 700;">
+              <div style="padding: 10px 8px; color: #facc15;">SUMMARY</div>
+              <div style="padding: 10px 8px; color: #f8fafc;">Total Jobs: 4</div>
+              <div style="padding: 10px 8px; color: #94a3b8;">&mdash;</div>
+              <div style="padding: 10px 8px; color: #38bdf8;">All Nodes Active</div>
+              <div style="padding: 10px 8px; color: #4ade80;">ALL SETTLED</div>
+              <div style="padding: 10px 8px; border-left: 1px solid rgba(234, 179, 8, 0.3); border-right: 1px solid rgba(234, 179, 8, 0.3); color: #4ade80; text-align: center; font-size: 11px;">
+                Total Volume: $0.55 USD
+              </div>
+              <div style="padding: 10px 8px; color: #4ade80;">Avg: 1,180ms</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 5: OUTRO FINALE -->
+      <div id="scene-outro">
+        <div class="intro-badge" style="border-color: #22c55e; color: #4ade80; background: rgba(34, 197, 94, 0.1);">
+          Ready for Autonomous Commerce
+        </div>
+        <h1 class="intro-title" style="font-size: 54px;">github.com/Aarav7162/bounty</h1>
+        <p class="intro-sub" style="font-size: 18px; max-width: 620px;">
+          Built for PayPal AI Hackathon 2026 · Turning Agent Roadblocks into Verifiable Market Micro-Settlements
+        </p>
+        <div style="display: flex; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+          <div class="intro-pill">bounty buy &lt;capability&gt;</div>
+          <div class="intro-pill">bounty sell</div>
+          <div class="intro-pill">bounty server</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const camera = document.getElementById('camera');
+    const hud = document.getElementById('hud');
+    const hudText = document.getElementById('hud-text');
+
+    const sceneIntro = document.getElementById('scene-intro');
+    const sceneOutro = document.getElementById('scene-outro');
+    const winBuyer = document.getElementById('window-buyer');
+    const winSeller = document.getElementById('window-seller');
+    const winDash = document.getElementById('window-dashboard');
+
+    function setHud(text) {
+      hudText.textContent = text;
+      hud.classList.add('active');
+    }
+
+    // Dynamic 3D Camera & Motion Timeline (Exact 150s / 2m 30s Master Journey)
+    window.runTimeline = async function() {
+      // 0s - 12s: Scene 1 Intro
+      setHud("PAYPAL AI HACKATHON 2026 · AGENTIC COMMERCE");
+      await new Promise(r => setTimeout(r, 12000));
+
+      // 12s - 16s: Camera flies forward, intro fades, Dual Terminals glide into focus!
+      sceneIntro.style.opacity = '0';
+      sceneIntro.style.transform = 'translateZ(300px)';
+      setHud("SIDE-BY-SIDE DUAL AGENT CONCURRENCY");
+
+      // Fly to Neutral Dual Terminal View
+      camera.style.transform = 'translateZ(-150px) rotateX(6deg)';
+      await new Promise(r => setTimeout(r, 4000));
+
+      // 16s - 37s: Camera sweeps & ZOOMS IN on Buyer Terminal Roadblock!
+      setHud("BUYER AGENT DETECTS HTTP 403 CLOUDFLARE TURNSTILE");
+      camera.style.transform = 'translateX(260px) translateY(-20px) translateZ(180px) rotateY(-8deg) rotateX(4deg)';
+      await new Promise(r => setTimeout(r, 4000));
+      
+      // Step 1: Roadblock trapped
+      document.getElementById('b-s1').classList.add('show');
+      document.getElementById('b-card').classList.add('glow-box-roadblock');
+      await new Promise(r => setTimeout(r, 6000));
+
+      // Step 2: RFP Broadcast
+      setHud("STRUGGLE ENVELOPE BROADCASTS MACHINE RFP ($0.06 CEILING)");
+      document.getElementById('b-s2').classList.add('show');
+      await new Promise(r => setTimeout(r, 6000));
+
+      // Step 3: Node matched
+      setHud("SELLER NODE MATCHES BID & CLAIMS TASK ($0.05 USD)");
+      document.getElementById('b-s3').classList.add('show');
+      await new Promise(r => setTimeout(r, 5000));
+
+      // 37s - 83s: Camera sweeps across to Seller Node & ZOOMS IN!
+      document.getElementById('b-card').classList.remove('glow-box-roadblock');
+      camera.style.transform = 'translateX(-260px) translateY(-20px) translateZ(180px) rotateY(8deg) rotateX(4deg)';
+      await new Promise(r => setTimeout(r, 5000));
+
+      // Seller claims task & demonstrates interactive command interface
+      const cmdEl = document.getElementById('s-cmd-text');
+      cmdEl.textContent = 'status';
+      document.getElementById('s-evt-wait').style.display = 'none';
+      document.getElementById('s-evt-2').style.display = 'block';
+      document.getElementById('s-evt-3').style.display = 'block';
+      await new Promise(r => setTimeout(r, 7000));
+
+      // Seller computes SHA-256
+      cmdEl.textContent = 'stats';
+      setHud("ISOLATED SUBPROCESS SANDBOX · COMPUTING SHA-256 PROOF");
+      document.getElementById('s-evt-4').style.display = 'block';
+      document.getElementById('b-s4').classList.add('show');
+      await new Promise(r => setTimeout(r, 8000));
+
+      // PayPal Payout Settles!
+      cmdEl.textContent = 'balance';
+      setHud("AUTONOMOUS PAYPAL MICRO-PAYOUT SETTLED · BATCH: VH7GM2N22RB9G");
+      document.getElementById('s-evt-5').style.display = 'block';
+      document.getElementById('s-evt-5').classList.add('glow-box-payout');
+      document.getElementById('b-s5').classList.add('show');
+      document.getElementById('b-card').classList.add('glow-box-payout');
+      await new Promise(r => setTimeout(r, 8000));
+
+      // Ticker rolls up!
+      setHud("REAL-TIME REVENUE TICKER UPDATE · $0.05 -> $0.10 USD");
+      document.getElementById('s-ticker').textContent = '$0.10 USD';
+      document.getElementById('s-ticker').style.transform = 'scale(1.15)';
+      document.getElementById('s-jobs').textContent = '2';
+      await new Promise(r => setTimeout(r, 6000));
+      document.getElementById('s-ticker').style.transform = 'scale(1)';
+
+      // Buyer receives verified payload
+      setHud("CRYPTOGRAPHIC PROOF VERIFIED · UNBLOCKED IN 2.63s");
+      document.getElementById('b-payload').style.display = 'block';
+      document.getElementById('b-payload').style.opacity = '1';
+      await new Promise(r => setTimeout(r, 7000));
+
+      // Pull back to wide view
+      camera.style.transform = 'translateZ(-180px) rotateX(5deg)';
+      await new Promise(r => setTimeout(r, 5000));
+
+      // 83s - 130s: Terminals sweep away, AG Grid Dashboard ZOOMS IN!
+      setHud("AG GRID COMMUNITY V33 · REAL-TIME TELEMETRY STREAMING");
+      winBuyer.style.transform = 'translateX(-800px) rotateY(30deg) scale(0.6)';
+      winBuyer.style.opacity = '0';
+      winSeller.style.transform = 'translateX(800px) rotateY(-30deg) scale(0.6)';
+      winSeller.style.opacity = '0';
+
+      winDash.style.opacity = '1';
+      winDash.style.pointerEvents = 'auto';
+      winDash.style.transform = 'translateZ(0) scale(1)';
+      camera.style.transform = 'translateZ(-50px) rotateX(4deg)';
+      await new Promise(r => setTimeout(r, 8000));
+
+      // Camera ZOOMS IN on Financial Column Group
+      setHud("FINANCIAL GROUPING · BID ($), AMOUNT PAID ($), PAYPAL BATCH ID");
+      camera.style.transform = 'translateX(-80px) translateY(80px) translateZ(320px) rotateX(8deg)';
+      document.getElementById('dash-row-latest').style.background = 'rgba(234, 179, 8, 0.18)';
+      await new Promise(r => setTimeout(r, 14000));
+
+      // Camera sweeps to Latency & Pinned Summary
+      setHud("PINNED SUMMARY AGGREGATION & LATENCY SLA GAUGES");
+      camera.style.transform = 'translateX(60px) translateY(-60px) translateZ(280px) rotateX(6deg)';
+      await new Promise(r => setTimeout(r, 14000));
+
+      // Camera pulls back to full dashboard overview
+      setHud("MULTI-NODE TELEMETRY · 100% CRYPTOGRAPHIC SHA-256 PROOFS");
+      camera.style.transform = 'translateZ(-100px) rotateX(4deg)';
+      await new Promise(r => setTimeout(r, 11000));
+
+      // 130s - 150s: Grand Finale & Outro
+      setHud("OPEN-SOURCE · MIT LICENSE · GITHUB.COM/AARAV7162/BOUNTY");
+      winDash.style.transform = 'translateZ(-600px) scale(0.6)';
+      winDash.style.opacity = '0';
+
+      sceneOutro.style.opacity = '1';
+      sceneOutro.style.pointerEvents = 'auto';
+      camera.style.transform = 'translateZ(0) rotateX(0)';
+      await new Promise(r => setTimeout(r, 20000));
+    };
+  </script>
+</body>
+</html>
+

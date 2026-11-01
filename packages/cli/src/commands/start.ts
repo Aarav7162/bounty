@@ -23,6 +23,7 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
   if (!brokerUrl.includes("/ws/")) {
     brokerUrl = brokerUrl.replace(/\/$/, "") + "/ws/seller";
   }
+  const instanceNodeId = `${config.nodeId}_${Math.random().toString(36).substring(2, 6)}`;
   const sandbox = new ExecutionSandbox();
   const tui = new BountyTUI(config, brokerUrl);
 
@@ -73,7 +74,7 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
       ws?.send(
         JSON.stringify({
           type: "REGISTER_SELLER",
-          nodeId: config!.nodeId,
+          nodeId: instanceNodeId,
           paypalEmail: config!.payoutDestination.value,
           capabilities: capRegistrations
         })
@@ -88,7 +89,7 @@ export async function runStartCommand(options: StartCommandOptions): Promise<voi
           case "REGISTERED": {
             tui.addEvent(
               chalk.green("✓"),
-              `Connected to broker  ·  ${config!.nodeId.slice(0, 14)}`
+              `Connected to broker  ·  ${instanceNodeId.slice(0, 18)}`
             );
             tui.setActiveStep({ spinner: true, text: "Waiting for tasks..." });
             break;

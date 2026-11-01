@@ -31,9 +31,8 @@ export async function runBuyScrapeCommand(url: string, options: BuyOptions): Pro
 
   if (!isJsonOnly && !options.quiet) {
     console.log("");
-    console.log(chalk.cyan.bold("  ╭────────────────────────────────────────────────────────────────────────╮"));
-    console.log(chalk.cyan.bold("  │") + chalk.white.bold(`  BOUNTY BUYER DELEGATION · RFP: ${rfpId}`).padEnd(80) + chalk.cyan.bold("│"));
-    console.log(chalk.cyan.bold("  ├────────────────────────────────────────────────────────────────────────┤"));
+    console.log(chalk.white.bold("  Bounty Buyer Delegation") + chalk.gray(` · RFP: ${rfpId}`));
+    console.log(chalk.gray("  " + "─".repeat(64)));
   }
 
   // Step 1: Roadblock check
@@ -48,7 +47,7 @@ export async function runBuyScrapeCommand(url: string, options: BuyOptions): Pro
   }
 
   if (!isJsonOnly && !options.quiet) {
-    console.log(chalk.cyan.bold("  │") + `  ${chalk.green("✔")} 1. Roadblock Trapped       [${chalk.yellow(statusTrapDesc)}]`.padEnd(80) + chalk.cyan.bold("│"));
+    console.log(`  ${chalk.green("✔")}  ${chalk.white("Roadblock Trapped")}       ${chalk.gray(`[${statusTrapDesc}]`)}`);
     if (pauseMs > 0) await sleep(pauseMs);
   }
 
@@ -76,8 +75,8 @@ export async function runBuyScrapeCommand(url: string, options: BuyOptions): Pro
   if (!rfpRes.ok) {
     const errText = await rfpRes.text();
     if (!isJsonOnly) {
-      console.log(chalk.cyan.bold("  │") + `  ${chalk.red("✕")} 2. RFP Broadcast Failed    [${chalk.red(errText)}]`.padEnd(80) + chalk.cyan.bold("│"));
-      console.log(chalk.cyan.bold("  ╰────────────────────────────────────────────────────────────────────────╯"));
+      console.log(`  ${chalk.red("✕")}  ${chalk.red("RFP Broadcast Failed")}    ${chalk.gray(`[${errText}]`)}`);
+      console.log(chalk.gray("  " + "─".repeat(64)));
     }
     throw new Error(`Failed to match RFP: ${errText}`);
   }
@@ -86,10 +85,10 @@ export async function runBuyScrapeCommand(url: string, options: BuyOptions): Pro
   const assignment = matchData.assignment;
 
   if (!isJsonOnly && !options.quiet) {
-    console.log(chalk.cyan.bold("  │") + `  ${chalk.green("✔")} 2. RFP Broadcasted         [Cap: web_scrape · Ceiling: $${bidCeiling.toFixed(2)}]`.padEnd(80) + chalk.cyan.bold("│"));
+    console.log(`  ${chalk.green("✔")}  ${chalk.white("RFP Broadcasted")}         ${chalk.gray(`[web_scrape · Ceiling: $${bidCeiling.toFixed(2)}]`)}`);
     if (pauseMs > 0) await sleep(pauseMs);
 
-    console.log(chalk.cyan.bold("  │") + `  ${chalk.green("✔")} 3. Orderbook Matched       [Node: ${chalk.cyan(assignment.nodeId)} · Price: $${assignment.agreedPriceUsd.toFixed(2)}]`.padEnd(80) + chalk.cyan.bold("│"));
+    console.log(`  ${chalk.green("✔")}  ${chalk.white("Orderbook Matched")}       ${chalk.gray(`[Node: ${chalk.cyan(assignment.nodeId)} · $${assignment.agreedPriceUsd.toFixed(2)} USD]`)}`);
     if (pauseMs > 0) await sleep(pauseMs);
   }
 
@@ -114,8 +113,8 @@ export async function runBuyScrapeCommand(url: string, options: BuyOptions): Pro
 
   if (!settledTask) {
     if (!isJsonOnly) {
-      console.log(chalk.cyan.bold("  │") + `  ${chalk.red("✕")} 4. Execution Timeout       [No response from seller node within ${maxTimeout}ms]`.padEnd(80) + chalk.cyan.bold("│"));
-      console.log(chalk.cyan.bold("  ╰────────────────────────────────────────────────────────────────────────╯"));
+      console.log(`  ${chalk.red("✕")}  ${chalk.red("Execution Timeout")}       ${chalk.gray(`[No response within ${maxTimeout}ms]`)}`);
+      console.log(chalk.gray("  " + "─".repeat(64)));
     }
     throw new Error(`Timeout waiting for task ${rfpId} to settle`);
   }
@@ -129,16 +128,15 @@ export async function runBuyScrapeCommand(url: string, options: BuyOptions): Pro
   recordBuyerSpend(assignment.agreedPriceUsd);
 
   if (!isJsonOnly && !options.quiet) {
-    console.log(chalk.cyan.bold("  │") + `  ${chalk.green("✔")} 4. Execution Sandbox       [${payloadBytes} bytes · SHA-256 Verified]`.padEnd(80) + chalk.cyan.bold("│"));
+    console.log(`  ${chalk.green("✔")}  ${chalk.white("Cryptographic Proof")}     ${chalk.gray(`[${payloadBytes} bytes · SHA-256 Verified]`)}`);
     if (pauseMs > 0) await sleep(pauseMs);
 
-    console.log(chalk.cyan.bold("  │") + `  ${chalk.green("✔")} 5. PayPal Settlement       [Batch: ${chalk.yellow(receipt.paypalReferenceId)} · ${chalk.green("SUCCESS")}]`.padEnd(80) + chalk.cyan.bold("│"));
+    console.log(`  ${chalk.green("✔")}  ${chalk.white("PayPal Rails Settled")}    ${chalk.gray(`[Batch: ${chalk.yellow(receipt.paypalReferenceId)} · Status: ${chalk.green("SUCCESS")}]`)}`);
     if (pauseMs > 0) await sleep(pauseMs);
 
     const elapsedSec = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.log(chalk.cyan.bold("  ├────────────────────────────────────────────────────────────────────────┤"));
-    console.log(chalk.cyan.bold("  │") + `  Duration: ${elapsedSec}s  ·  Settlement: $${assignment.agreedPriceUsd.toFixed(2)} USD  ·  Rails: PayPal Sandbox`.padEnd(80) + chalk.cyan.bold("│"));
-    console.log(chalk.cyan.bold("  ╰────────────────────────────────────────────────────────────────────────╯"));
+    console.log(chalk.gray("  " + "─".repeat(64)));
+    console.log(`  ${chalk.gray("Latency:")} ${chalk.white(`${elapsedSec}s`)}  ${chalk.gray("·")}  ${chalk.gray("Settlement:")} ${chalk.green(`$${assignment.agreedPriceUsd.toFixed(2)} USD`)}  ${chalk.gray("·")}  ${chalk.gray("Rails:")} ${chalk.yellow("PayPal Sandbox")}`);
     console.log("");
   }
 
