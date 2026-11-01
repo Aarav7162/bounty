@@ -26,9 +26,13 @@
   "author": "Bounty Team",
   "license": "MIT",
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^22.10.2",
     "playwright": "^1.64.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "express": "^5.3.0"
   }
 }
