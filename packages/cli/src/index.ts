@@ -7,6 +7,7 @@ import { runStartCommand } from "./commands/start.js";
 
 // Load environment variables
 dotenv.config({ path: resolve(process.cwd(), "../../.env") });
+dotenv.config({ path: resolve("c:/Users/aarav.SOMEGUYWITHPRET/Bounty/.env") });
 dotenv.config();
 
 const program = new Command();
@@ -26,20 +27,15 @@ program
   });
 
 program
-  .command("start")
-  .description("Start the background seller worker daemon with live TUI")
+  .command("start", { isDefault: true })
+  .description("Start the background seller worker daemon with live split-view TUI (default command)")
   .option("-c, --config <path>", "Path to custom bounty.config.json")
   .option("-b, --broker <url>", "WebSocket URL of the Bounty Broker Hub")
   .action(async (options) => {
     await runStartCommand(options);
   });
 
-// Default to help if no command provided
-if (!process.argv.slice(2).length) {
-  program.outputHelp();
-} else {
-  program.parse(process.argv);
-}
+program.parse(process.argv);
 
 export * from "./config.js";
 export * from "./ui/theme.js";

@@ -30,7 +30,12 @@ export function loadConfig(customPath?: string): BountyConfig | null {
     if (existsSync(parentRoot)) {
       filePath = parentRoot;
     } else {
-      return null;
+      const knownProjectConfig = resolve("c:/Users/aarav.SOMEGUYWITHPRET/Bounty", customPath ?? DEFAULT_CONFIG_FILE);
+      if (existsSync(knownProjectConfig)) {
+        filePath = knownProjectConfig;
+      } else {
+        return null;
+      }
     }
   }
 

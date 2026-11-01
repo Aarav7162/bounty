@@ -1,7 +1,7 @@
 {
   "name": "@bounty/cli",
   "version": "1.0.0",
-  "description": "Claude Code-inspired Seller CLI for Bounty: Autonomous machine-to-machine worker node",
+  "description": "Developer-first split-view terminal interface for Bounty: Autonomous machine-to-machine worker node",
   "bin": {
     "bounty": "./dist/index.js",
     "bounty-node": "./dist/index.js"
