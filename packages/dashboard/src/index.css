@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #090d16;
+  color: #f8fafc;
+}
+
+/* AG Grid Dark Quartz Customizations */
+.ag-theme-quartz-dark {
+  --ag-background-color: #0b0f19;
+  --ag-header-background-color: #0f172a;
+  --ag-odd-row-background-color: #0b0f19;
+  --ag-header-foreground-color: #94a3b8;
+  --ag-foreground-color: #e2e8f0;
+  --ag-border-color: #1e293b;
+  --ag-row-border-color: #1e293b;
+  --ag-font-family: 'Inter', sans-serif;
+  --ag-font-size: 13px;
+  --ag-selected-row-background-color: rgba(56, 189, 248, 0.08);
+  --ag-row-hover-color: rgba(30, 41, 59, 0.6);
+  --ag-pinned-bottom-row-background-color: #0f172a;
+  --ag-input-focus-border-color: #38bdf8;
+  --ag-checkbox-checked-color: #0284c7;
+}
+
+.ag-theme-quartz-dark .ag-pinned-bottom-row {
+  font-weight: 700;
+  border-top: 2px solid #38bdf8 !important;
+  background-color: #090d16 !important;
+}
+
+.ag-theme-quartz-dark .ag-header-cell-label {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ag-theme-quartz-dark .ag-header-group-cell-label {
+  justify-content: center;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #090d16;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+

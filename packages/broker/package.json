@@ -1,0 +1,28 @@
+{
+  "name": "@bounty/broker",
+  "version": "1.0.0",
+  "description": "Bounty Broker Hub: WebSocket matching engine, telemetry stream, and dual-mode PayPal payouts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "test": "tsx --test test/broker.test.ts"
+  },
+  "dependencies": {
+    "@bounty/protocol": "*",
+    "dotenv": "^16.4.7",
+    "ws": "^8.18.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.2"
+  }
+}
+

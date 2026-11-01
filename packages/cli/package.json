@@ -1,0 +1,36 @@
+{
+  "name": "@bounty/cli",
+  "version": "1.0.0",
+  "description": "Claude Code-inspired Seller CLI for Bounty: Autonomous machine-to-machine worker node",
+  "bin": {
+    "bounty": "./dist/index.js",
+    "bounty-node": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js start",
+    "test": "tsx --test test/cli-lifecycle.test.ts"
+  },
+  "dependencies": {
+    "@bounty/protocol": "*",
+    "@clack/prompts": "^0.9.1",
+    "chalk": "^5.4.1",
+    "cli-spinners": "^3.1.2",
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.7",
+    "log-update": "^6.1.0",
+    "ws": "^8.18.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.2"
+  }
+}

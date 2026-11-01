@@ -1,0 +1,34 @@
+{
+  "name": "bounty-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bounty: Machine-to-Machine Subcontracting & Autonomous Resource Arbitrage via PayPal",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present",
+    "cli": "npm run dev --workspace=@bounty/cli",
+    "broker": "npm run dev --workspace=@bounty/broker",
+    "dashboard": "npm run dev --workspace=@bounty/dashboard"
+  },
+  "keywords": [
+    "paypal",
+    "mcp",
+    "agentic-commerce",
+    "multi-agent",
+    "subcontracting",
+    "micro-payouts",
+    "ag-grid"
+  ],
+  "author": "Bounty Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "playwright": "^1.64.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

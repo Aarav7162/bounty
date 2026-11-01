@@ -1,0 +1,25 @@
+{
+  "nodeId": "node_mumbai_01",
+  "payoutDestination": {
+    "type": "PAYPAL_EMAIL",
+    "value": "sb-sqcdl53128062@personal.example.com"
+  },
+  "brokerUrl": "ws://localhost:4000/ws/seller",
+  "capabilities": {
+    "python_code": {
+      "floorPriceUsd": 0.25,
+      "maxConcurrency": 2,
+      "description": "Python code execution, unit testing and bug fixing"
+    },
+    "ocr": {
+      "floorPriceUsd": 0.2,
+      "maxConcurrency": 2,
+      "description": "Tesseract OCR engine"
+    },
+    "web_scrape": {
+      "floorPriceUsd": 0.05,
+      "maxConcurrency": 2,
+      "description": "httpx + BeautifulSoup web scraping"
+    }
+  }
+}
